@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: article
+  datasource:
+    url: jdbc:mysql://localhost:3306/article?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
+    username: your_username
+    password: your_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+news:
+  rss:
+    feeds:
+      - https://example.com/economy/rss
+      - https://another-news.com/rss
