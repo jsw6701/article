@@ -1,12 +1,17 @@
 package com.yourapp.news.article
 
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.batchInsert
-import org.jetbrains.exposed.sql.inList
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.v1.core.ResultRow
+import org.jetbrains.exposed.v1.core.SortOrder
+import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.core.inList
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.batchInsert
+import org.jetbrains.exposed.v1.jdbc.selectAll
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 
 @Repository
 class ArticleStore(private val database: Database) {
@@ -14,7 +19,7 @@ class ArticleStore(private val database: Database) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     fun existsByLink(link: String): Boolean = transaction(database) {
-        Articles.select { Articles.link eq link }.limit(1).any()
+        Articles.selectAll().where { Articles.link eq link }.limit(1).any()
     }
 
     fun saveAll(articles: List<Article>): Int = transaction(database) {
@@ -23,8 +28,8 @@ class ArticleStore(private val database: Database) {
 
         val links = uniqueCandidates.map { it.link }
         val existingLinks = Articles
-            .slice(Articles.link)
-            .select { Articles.link inList links }
+            .selectAll()
+            .where { Articles.link inList links }
             .map { it[Articles.link] }
             .toSet()
 
@@ -50,4 +55,61 @@ class ArticleStore(private val database: Database) {
 
         insertedCount
     }
+
+    /**
+     * 최근 N시간 내 발행된 기사 조회
+     * @param hours 조회할 시간 범위 (기본 48시간)
+     * @param limit 최대 조회 건수 (기본 1000건)
+     */
+    fun findRecentArticles(hours: Long = 48, limit: Int = 1000): List<Article> = transaction(database) {
+        val since = LocalDateTime.now().minusHours(hours)
+        Articles.selectAll()
+            .where { Articles.publishedAt greaterEq since }
+            .orderBy(Articles.publishedAt, SortOrder.DESC)
+            .limit(limit)
+            .map { it.toArticle() }
+    }
+
+    /**
+     * 특정 시점 이후 발행된 기사 조회
+     */
+    fun findArticlesSince(since: LocalDateTime, limit: Int = 1000): List<Article> = transaction(database) {
+        Articles.selectAll()
+            .where { Articles.publishedAt greaterEq since }
+            .orderBy(Articles.publishedAt, SortOrder.DESC)
+            .limit(limit)
+            .map { it.toArticle() }
+    }
+
+    /**
+     * 링크 목록으로 기사 조회
+     */
+    fun findByLinks(links: List<String>): List<Article> = transaction(database) {
+        if (links.isEmpty()) return@transaction emptyList()
+        Articles.selectAll()
+            .where { Articles.link inList links }
+            .map { it.toArticle() }
+    }
+
+    /**
+     * 링크 목록으로 기사 조회 (최신순 정렬, 최대 limit개)
+     * 카드 생성용
+     */
+    fun findByLinksForCard(links: List<String>, limit: Int = 8): List<Article> = transaction(database) {
+        if (links.isEmpty()) return@transaction emptyList()
+        Articles.selectAll()
+            .where { Articles.link inList links }
+            .orderBy(Articles.publishedAt, SortOrder.DESC)
+            .limit(limit)
+            .map { it.toArticle() }
+    }
+
+    private fun ResultRow.toArticle(): Article = Article(
+        title = this[Articles.title],
+        summary = this[Articles.summary],
+        link = this[Articles.link],
+        publisher = this[Articles.publisher],
+        publishedAt = this[Articles.publishedAt],
+        category = this[Articles.category]
+    )
 }

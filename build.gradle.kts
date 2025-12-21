@@ -34,6 +34,9 @@ dependencies {
 
     implementation("com.rometools:rome:1.18.0")
 
+    // Swagger/OpenAPI - WebFlux용
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.8")
+
     runtimeOnly("com.mysql:mysql-connector-j")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

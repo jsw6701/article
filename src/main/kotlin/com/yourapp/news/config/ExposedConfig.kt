@@ -1,16 +1,21 @@
 package com.yourapp.news.config
 
 import com.yourapp.news.article.Articles
-import javax.sql.DataSource
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.SchemaUtils
-import org.jetbrains.exposed.sql.transactions.transaction
+import com.yourapp.news.card.CardGenerationLogs
+import com.yourapp.news.card.Cards
+import com.yourapp.news.issue.IssueArticles
+import com.yourapp.news.issue.Issues
+import com.yourapp.news.pipeline.PipelineRuns
+import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.SchemaUtils
+import org.jetbrains.exposed.v1.jdbc.transactions.transaction
 import org.slf4j.LoggerFactory
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.jdbc.datasource.DataSourceTransactionManager
 import org.springframework.transaction.PlatformTransactionManager
+import javax.sql.DataSource
 
 @Configuration
 class ExposedConfig {
@@ -27,8 +32,16 @@ class ExposedConfig {
     @Bean
     fun schemaInitializer(database: Database) = ApplicationRunner {
         transaction(database) {
-            log.info("Ensuring Articles table exists")
-            SchemaUtils.createMissingTablesAndColumns(Articles)
+            log.info("Ensuring database tables exist")
+            @Suppress("DEPRECATION")
+            SchemaUtils.createMissingTablesAndColumns(
+                Articles,
+                Issues,
+                IssueArticles,
+                Cards,
+                CardGenerationLogs,
+                PipelineRuns
+            )
         }
     }
 }

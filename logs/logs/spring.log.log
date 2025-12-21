@@ -1,0 +1,90 @@
+2025-12-22 00:00:00.008 [scheduling-1] [] INFO  c.y.news.pipeline.PipelineScheduler - Scheduled pipeline execution started
+2025-12-22 00:00:00.014 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - ========== Pipeline started at 2025-12-22T00:00:00.014616200 ==========
+2025-12-22 00:00:00.014 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Starting collection from 5 feeds
+2025-12-22 00:00:00.069 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=www.mk.co.kr, entries=50, saved=0
+2025-12-22 00:00:00.130 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=www.hankyung.com, entries=50, saved=0
+2025-12-22 00:00:00.178 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=rss.edaily.co.kr, entries=50, saved=0
+2025-12-22 00:00:00.358 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=rss.mt.co.kr, entries=100, saved=0
+2025-12-22 00:00:00.388 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=www.yonhapnews.co.kr, entries=0, saved=0
+2025-12-22 00:00:00.389 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Collection complete: totalFeeds=5, success=5, failed=0, totalSaved=0, elapsedMs=375
+2025-12-22 00:00:00.389 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - [RSS] Collected 0 articles
+2025-12-22 00:00:00.389 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Starting clustering for articles from last 48 hours, limit=1000
+2025-12-22 00:00:00.413 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Loaded 207 articles for clustering
+2025-12-22 00:00:00.423 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Classified 107 out of 207 articles
+2025-12-22 00:00:00.429 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Updated existing issue: 환율 관련 이슈: 환율/달러 (fingerprint=FX:달러,외환,환율)
+2025-12-22 00:00:00.433 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Updated existing issue: 금리 관련 이슈: 금리/인하 (fingerprint=RATE:금리,기준금리,인하)
+2025-12-22 00:00:00.437 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Updated existing issue: 부동산 이슈: 부동산/주택 (fingerprint=REALESTATE:부동산,주택)
+2025-12-22 00:00:00.438 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Clustering completed: 0 created, 3 updated, 96 skipped
+2025-12-22 00:00:00.438 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - [Cluster] Created 0, Updated 3, Skipped 96
+2025-12-22 00:00:00.441 [scheduling-1] [] INFO  c.y.news.card.CardGenerationService - Found 4 card generation targets
+2025-12-22 00:00:00.446 [scheduling-1] [] INFO  c.y.news.card.CardGenerationService - Card generation completed: 0 success, 4 skipped, 0 failed
+2025-12-22 00:00:00.446 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - [Card] Generated 0, Skipped 4, Failed 0
+2025-12-22 00:00:00.458 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - ========== Pipeline finished ==========
+Status: SUCCESS
+Duration: 432ms
+RSS Saved: 0
+Issues Created: 0, Updated: 3
+Cards Created: 0, Failed: 0
+
+========================================
+2025-12-22 00:02:54.568 [SpringApplicationShutdownHook] [] INFO  o.s.b.reactor.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-12-22 00:02:54.572 [netty-shutdown] [] INFO  o.s.b.reactor.netty.GracefulShutdown - Graceful shutdown complete
+2025-12-22 00:02:56.588 [SpringApplicationShutdownHook] [] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-12-22 00:02:56.593 [SpringApplicationShutdownHook] [] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-12-22 00:03:01.065 [main] [] INFO  c.yourapp.news.ArticleApplicationKt - Starting ArticleApplicationKt using Java 21.0.4 with PID 31648 (C:\ToyProject\article\build\classes\kotlin\main started by anes5 in C:\ToyProject\article)
+2025-12-22 00:03:01.068 [main] [] INFO  c.yourapp.news.ArticleApplicationKt - No active profile set, falling back to 1 default profile: "default"
+2025-12-22 00:03:01.229 [background-preinit] [] INFO  o.h.validator.internal.util.Version - HV000001: Hibernate Validator 9.0.1.Final
+2025-12-22 00:03:04.017 [main] [] INFO  o.s.b.reactor.netty.NettyWebServer - Netty started on port 8080 (http)
+2025-12-22 00:03:04.026 [main] [] INFO  c.yourapp.news.ArticleApplicationKt - Started ArticleApplicationKt in 3.659 seconds (process running for 4.674)
+2025-12-22 00:03:04.032 [main] [] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-12-22 00:03:04.202 [main] [] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@1a06b95
+2025-12-22 00:03:04.204 [main] [] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-12-22 00:03:04.225 [main] [] INFO  c.y.n.c.ExposedConfig$$SpringCGLIB$$0 - Ensuring database tables exist
+2025-12-22 00:03:04.293 [main] [] INFO  Exposed - Preparing create tables statements took 44ms
+2025-12-22 00:03:04.306 [main] [] INFO  Exposed - Executing create tables statements took 12ms
+2025-12-22 00:03:04.333 [main] [] INFO  Exposed - Extracting table columns took 27ms
+2025-12-22 00:03:04.339 [main] [] INFO  Exposed - Extracting primary keys took 6ms
+2025-12-22 00:03:04.363 [main] [] INFO  Exposed - Extracting column constraints took 18ms
+2025-12-22 00:03:04.363 [main] [] INFO  Exposed - Preparing alter tables statements took 57ms
+2025-12-22 00:03:04.364 [main] [] INFO  Exposed - Executing alter tables statements took 1ms
+2025-12-22 00:03:04.378 [main] [] INFO  Exposed - Checking mapping consistence took 14ms
+2025-12-22 00:06:00.015 [scheduling-1] [] INFO  c.y.news.pipeline.PipelineScheduler - Scheduled pipeline execution started
+2025-12-22 00:06:00.016 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - ========== Pipeline started at 2025-12-22T00:06:00.016701400 ==========
+2025-12-22 00:06:00.017 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Starting collection from 5 feeds
+2025-12-22 00:06:00.853 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=www.mk.co.kr, entries=50, saved=0
+2025-12-22 00:06:00.975 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=www.hankyung.com, entries=50, saved=0
+2025-12-22 00:06:01.145 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=rss.edaily.co.kr, entries=50, saved=0
+2025-12-22 00:06:01.376 [scheduling-1] [] INFO  c.yourapp.news.article.ArticleStore - Inserted 5 new articles
+2025-12-22 00:06:01.383 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=rss.mt.co.kr, entries=100, saved=5
+2025-12-22 00:06:01.452 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Feed success: url=www.yonhapnews.co.kr, entries=0, saved=0
+2025-12-22 00:06:01.453 [scheduling-1] [] INFO  c.y.news.rss.RssCollectorService - [RSS] Collection complete: totalFeeds=5, success=5, failed=0, totalSaved=5, elapsedMs=1436
+2025-12-22 00:06:01.453 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - [RSS] Collected 5 articles
+2025-12-22 00:06:01.453 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Starting clustering for articles from last 48 hours, limit=1000
+2025-12-22 00:06:01.535 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Loaded 211 articles for clustering
+2025-12-22 00:06:01.546 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Classified 109 out of 211 articles
+2025-12-22 00:06:01.564 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Updated existing issue: 환율 관련 이슈: 환율/달러 (fingerprint=FX:달러,외환,환율)
+2025-12-22 00:06:01.572 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Updated existing issue: 금리 관련 이슈: 금리/인하 (fingerprint=RATE:금리,기준금리,인하)
+2025-12-22 00:06:01.577 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Updated existing issue: 부동산 이슈: 부동산/주택 (fingerprint=REALESTATE:부동산,주택)
+2025-12-22 00:06:01.577 [scheduling-1] [] INFO  c.y.news.issue.IssueClusterService - Clustering completed: 0 created, 3 updated, 98 skipped
+2025-12-22 00:06:01.577 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - [Cluster] Created 0, Updated 3, Skipped 98
+2025-12-22 00:06:01.581 [scheduling-1] [] INFO  c.y.news.card.CardGenerationService - Found 4 card generation targets
+2025-12-22 00:06:01.596 [scheduling-1] [] INFO  c.y.news.llm.gemini.GeminiClient - [Gemini] Starting request, model=gemini-3-flash-preview, promptLength=2038
+2025-12-22 00:06:11.047 [scheduling-1] [] INFO  c.y.news.llm.gemini.GeminiClient - [Gemini] Request successful, attempt=1, latencyMs=9450, responseLength=1098
+2025-12-22 00:06:11.103 [scheduling-1] [] INFO  c.y.news.card.CardGenerationService - Generated card 2 for issue 3
+2025-12-22 00:06:11.108 [scheduling-1] [] INFO  c.y.news.llm.gemini.GeminiClient - [Gemini] Starting request, model=gemini-3-flash-preview, promptLength=1115
+2025-12-22 00:06:21.323 [scheduling-1] [] INFO  c.y.news.llm.gemini.GeminiClient - [Gemini] Request successful, attempt=1, latencyMs=10215, responseLength=1014
+2025-12-22 00:06:21.344 [scheduling-1] [] INFO  c.y.news.card.CardGenerationService - Generated card 4 for issue 2
+2025-12-22 00:06:21.344 [scheduling-1] [] INFO  c.y.news.card.CardGenerationService - Card generation completed: 2 success, 2 skipped, 0 failed
+2025-12-22 00:06:21.344 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - [Card] Generated 2, Skipped 2, Failed 0
+2025-12-22 00:06:21.355 [scheduling-1] [] INFO  c.y.n.pipeline.PipelineOrchestrator - ========== Pipeline finished ==========
+Status: SUCCESS
+Duration: 21327ms
+RSS Saved: 5
+Issues Created: 0, Updated: 3
+Cards Created: 2, Failed: 0
+
+========================================
+2025-12-22 00:07:35.231 [SpringApplicationShutdownHook] [] INFO  o.s.b.reactor.netty.GracefulShutdown - Commencing graceful shutdown. Waiting for active requests to complete
+2025-12-22 00:07:35.234 [netty-shutdown] [] INFO  o.s.b.reactor.netty.GracefulShutdown - Graceful shutdown complete
+2025-12-22 00:07:37.253 [SpringApplicationShutdownHook] [] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-12-22 00:07:37.258 [SpringApplicationShutdownHook] [] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

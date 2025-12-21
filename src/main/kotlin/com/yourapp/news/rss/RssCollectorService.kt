@@ -24,38 +24,63 @@ class RssCollectorService(
     private val log = LoggerFactory.getLogger(javaClass)
     private val cutoffHours = 48L
 
+    /**
+     * 모든 RSS 피드에서 기사 수집
+     * @return 저장된 기사 수
+     */
+    fun collectAll(): Int = collect()
+
     fun collect(): Int {
         if (rssProperties.feeds.isEmpty()) {
-            log.info("No RSS feeds configured; skipping collection")
+            log.info("[RSS] No feeds configured, skipping collection")
             return 0
         }
 
-        var savedCount = 0
+        log.info("[RSS] Starting collection from {} feeds", rssProperties.feeds.size)
+        val startTime = System.currentTimeMillis()
+
+        var totalSaved = 0
+        var successCount = 0
+        var failCount = 0
+
         rssProperties.feeds.forEach { feedUrl ->
             runCatching { fetchFeed(feedUrl) }
                 .onSuccess { entries ->
                     val articles = entries.mapNotNull { toArticle(it, feedUrl) }
-                    if (articles.isNotEmpty()) {
-                        savedCount += articleStore.saveAll(articles)
-                    }
+                    val saved = if (articles.isNotEmpty()) {
+                        articleStore.saveAll(articles)
+                    } else 0
+                    
+                    totalSaved += saved
+                    successCount++
+                    log.info("[RSS] Feed success: url={}, entries={}, saved={}",
+                        maskUrl(feedUrl), entries.size, saved)
                 }
                 .onFailure { throwable ->
-                    log.warn("Failed to fetch feed {}", feedUrl, throwable)
+                    failCount++
+                    log.warn("[RSS] Feed failed: url={}, error={}",
+                        maskUrl(feedUrl), throwable.message)
                 }
         }
 
-        return savedCount
+        val elapsed = System.currentTimeMillis() - startTime
+        log.info("[RSS] Collection complete: totalFeeds={}, success={}, failed={}, totalSaved={}, elapsedMs={}",
+            rssProperties.feeds.size, successCount, failCount, totalSaved, elapsed)
+
+        return totalSaved
     }
 
     private fun fetchFeed(url: String): List<SyndEntry> {
-        val response = webClient.get()
+        val bytes = webClient.get()
             .uri(url)
+            .header("User-Agent", "yourapp-news-bot/1.0")
+            .header("Accept", "application/rss+xml, application/xml;q=0.9, */*;q=0.8")
             .retrieve()
-            .bodyToMono(String::class.java)
+            .bodyToMono(ByteArray::class.java)
             .block() ?: return emptyList()
 
         val feedInput = SyndFeedInput()
-        ByteArrayInputStream(response.toByteArray()).use { inputStream ->
+        ByteArrayInputStream(bytes).use { inputStream ->
             return feedInput.build(XmlReader(inputStream)).entries
         }
     }
@@ -94,5 +119,14 @@ class RssCollectorService(
             publishedAt = publishedAt.truncatedTo(ChronoUnit.SECONDS),
             category = "economy",
         )
+    }
+
+    /**
+     * URL에서 호스트명만 추출하여 마스킹 (보안)
+     */
+    private fun maskUrl(url: String): String {
+        return runCatching {
+            URI(url).host ?: url.take(50)
+        }.getOrDefault(url.take(50))
     }
 }
