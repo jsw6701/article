@@ -1,6 +1,5 @@
 package com.yourapp.news.card
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -39,7 +38,6 @@ class CardReadService(
      */
     fun getCard(issueId: Long): CardDetail? {
         val row = cardQuery.getCard(issueId) ?: return null
-        val cardJson = parseJson(row.cardContentJson)
 
         return CardDetail(
             issueId = row.issueId,
@@ -54,7 +52,7 @@ class CardReadService(
             cardModel = row.cardModel,
             cardCreatedAt = row.cardCreatedAt,
             cardUpdatedAt = row.cardUpdatedAt,
-            cardJson = cardJson
+            cardJson = row.cardContentJson
         )
     }
 
@@ -79,23 +77,14 @@ class CardReadService(
         }
     }
 
-    private fun parseContentJson(json: String): Pair<JsonNode?, String?> {
+    private fun parseContentJson(json: String): Pair<String, String?> {
         return try {
             val node = objectMapper.readTree(json)
             val conclusion = node.get("conclusion")?.asText()
-            node to conclusion
+            json to conclusion
         } catch (e: Exception) {
             log.warn("Failed to parse card JSON: {}", e.message)
-            null to null
-        }
-    }
-
-    private fun parseJson(json: String): JsonNode? {
-        return try {
-            objectMapper.readTree(json)
-        } catch (e: Exception) {
-            log.warn("Failed to parse card JSON: {}", e.message)
-            null
+            json to null
         }
     }
 }
@@ -112,7 +101,7 @@ data class CardListItem(
     val cardStatus: String,
     val cardUpdatedAt: LocalDateTime,
     val conclusion: String?,
-    val cardJson: JsonNode?
+    val cardJson: String?
 )
 
 /**
@@ -131,5 +120,5 @@ data class CardDetail(
     val cardModel: String,
     val cardCreatedAt: LocalDateTime,
     val cardUpdatedAt: LocalDateTime,
-    val cardJson: JsonNode?
+    val cardJson: String?
 )
