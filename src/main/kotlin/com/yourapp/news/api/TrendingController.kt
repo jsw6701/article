@@ -23,33 +23,35 @@ class TrendingController(
     @Operation(
         summary = "급상승 이슈 조회",
         description = """
-            최근 N시간 내 기사 수, 언론사 다양성, 최신성을 기반으로 급상승 이슈를 조회합니다.
+            현재 시각 기준으로 급상승 이슈를 조회합니다.
 
-            점수 계산 공식:
-            score = recentCount × 1.0 + publisherCount × 0.7 + recencyBoost × 1.2
+            - 조회 범위: 최근 48시간 내 기사가 있는 이슈
+            - 점수 계산: 기사 수 + 언론사 다양성 + 최신성(지수 감소)
 
-            recencyBoost = 1 - (마지막 기사 이후 분 / 180)
+            점수 공식:
+            score = articleCount × 1.5 + publisherBonus × 2.0 + recencyScore × 5.0
+
+            recencyScore = e^(-hoursSinceLast / 6)
+            - 방금 나온 기사: 5.0점
+            - 6시간 전: 1.85점
+            - 12시간 전: 0.68점
+            - 24시간 전: 0.09점
         """
     )
     @ApiResponse(responseCode = "200", description = "조회 성공")
     @GetMapping
     fun getTrending(
-        @Parameter(description = "최근 N시간 기준 (1~24)", schema = Schema(defaultValue = "3"))
-        @RequestParam(required = false, defaultValue = "3") hours: Int,
-
         @Parameter(description = "반환할 이슈 개수 (1~20)", schema = Schema(defaultValue = "10"))
         @RequestParam(required = false, defaultValue = "10") limit: Int
     ): ResponseEntity<TrendingResponse> {
-        val validatedHours = hours.coerceIn(1, 24).toLong()
         val validatedLimit = limit.coerceIn(1, 20)
 
-        val trending = trendingService.getTrendingIssues(validatedHours, validatedLimit)
+        val trending = trendingService.getTrendingIssues(validatedLimit)
 
         return ResponseEntity.ok(
             TrendingResponse(
                 items = trending,
-                count = trending.size,
-                hours = validatedHours.toInt()
+                count = trending.size
             )
         )
     }
@@ -64,8 +66,5 @@ data class TrendingResponse(
     val items: List<TrendingIssue>,
 
     @Schema(description = "반환된 이슈 수")
-    val count: Int,
-
-    @Schema(description = "조회 기준 시간 (N시간)")
-    val hours: Int
+    val count: Int
 )

@@ -12,38 +12,43 @@ class TrendingService(
 ) {
     companion object {
         // 점수 가중치
-        const val WEIGHT_VELOCITY = 5.0        // 시간당 기사 수 (가장 중요)
+        const val WEIGHT_ARTICLE_COUNT = 1.5   // 기사 수
         const val WEIGHT_PUBLISHER = 2.0       // 언론사 다양성
-        const val WEIGHT_RECENCY = 3.0         // 최신성
+        const val WEIGHT_RECENCY = 5.0         // 최신성 (가장 중요)
 
-        // 최신성 계산 윈도우 (분)
-        const val RECENCY_WINDOW_MINUTES = 60.0  // 1시간 기준
+        // 최신성 계산 기준 (시간)
+        const val RECENCY_DECAY_HOURS = 6.0    // 6시간 기준 decay
+
+        // 조회 범위 (고정)
+        const val FETCH_WINDOW_HOURS = 48L     // 최근 48시간 데이터 조회
     }
 
     /**
      * 급상승 이슈 조회
-     * @param hours 최근 N시간 내 기사 기준
-     * @param limit 반환할 이슈 개수
+     * - 조회 범위: 최근 48시간 (고정)
+     * - 점수 계산: 현재 시각 기준 최신성
+     * - 최소 보장: limit 개수만큼 (데이터 있는 한)
+     *
+     * @param limit 반환할 이슈 개수 (기본 10개)
      */
-    fun getTrendingIssues(hours: Long = 3, limit: Int = 10): List<TrendingIssue> {
+    fun getTrendingIssues(limit: Int = 10): List<TrendingIssue> {
         val now = LocalDateTime.now()
-        val since = now.minusHours(hours)
+        val since = now.minusHours(FETCH_WINDOW_HOURS)
 
-        // 1. 최근 기사가 있는 이슈들의 통계 조회
-        val issueStats = trendingQuery.getIssueStatsWithRecentArticles(since, limit * 3)
+        // 1. 최근 48시간 내 기사가 있는 이슈들 조회 (넉넉하게)
+        val issueStats = trendingQuery.getIssueStatsWithRecentArticles(since, limit * 5)
 
         if (issueStats.isEmpty()) {
             return emptyList()
         }
 
-        // 2. 각 이슈별 점수 계산
+        // 2. 각 이슈별 점수 계산 (현재 시각 기준)
         val scoredIssues = issueStats.map { stat ->
             val score = calculateScore(
-                recentCount = stat.recentArticleCount,
+                articleCount = stat.recentArticleCount,
                 publisherCount = stat.recentPublisherCount,
                 lastPublishedAt = stat.lastPublishedAt,
-                now = now,
-                windowHours = hours
+                now = now
             )
 
             // 카드 결론 조회 (있으면)
@@ -68,34 +73,39 @@ class TrendingService(
     }
 
     /**
-     * 급상승 점수 계산 (개선된 공식)
+     * 급상승 점수 계산
      *
-     * score = velocity × 5.0 + publisherBonus × 2.0 + recencyBoost × 3.0
+     * score = articleCount × 1.5 + publisherBonus × 2.0 + recencyScore × 5.0
      *
-     * - velocity: 시간당 기사 수 (정규화됨)
-     * - publisherBonus: 언론사 다양성 보너스 (2개 이상이면 가산)
-     * - recencyBoost: 최신성 (1시간 내면 높음)
+     * - articleCount: 기사 수 (많을수록)
+     * - publisherBonus: 언론사 다양성 (2개 이상부터 가산)
+     * - recencyScore: 최신성 (지수 감소, 최근일수록 높음)
+     *
+     * 최신성 계산: e^(-hoursSinceLast / 6)
+     * - 방금 나온 기사: 1.0
+     * - 6시간 전: 0.37
+     * - 12시간 전: 0.14
+     * - 24시간 전: 0.02
      */
     private fun calculateScore(
-        recentCount: Int,
+        articleCount: Int,
         publisherCount: Int,
         lastPublishedAt: LocalDateTime,
-        now: LocalDateTime,
-        windowHours: Long
+        now: LocalDateTime
     ): Double {
-        // 1. 시간당 기사 수 (velocity)
-        val velocity = recentCount.toDouble() / windowHours.coerceAtLeast(1)
+        // 1. 기사 수 점수
+        val articleScore = articleCount.toDouble()
 
         // 2. 언론사 다양성 보너스 (2개 이상부터 가산)
         val publisherBonus = (publisherCount - 1).coerceAtLeast(0).toDouble()
 
-        // 3. 최신성 (마지막 기사가 얼마나 최근인지)
-        val minutesSinceLast = ChronoUnit.MINUTES.between(lastPublishedAt, now).toDouble()
-        val recencyBoost = (1.0 - (minutesSinceLast / RECENCY_WINDOW_MINUTES)).coerceIn(0.0, 1.0)
+        // 3. 최신성 점수 (지수 감소)
+        val hoursSinceLast = ChronoUnit.MINUTES.between(lastPublishedAt, now).toDouble() / 60.0
+        val recencyScore = kotlin.math.exp(-hoursSinceLast / RECENCY_DECAY_HOURS)
 
-        return (velocity * WEIGHT_VELOCITY) +
+        return (articleScore * WEIGHT_ARTICLE_COUNT) +
                 (publisherBonus * WEIGHT_PUBLISHER) +
-                (recencyBoost * WEIGHT_RECENCY)
+                (recencyScore * WEIGHT_RECENCY)
     }
 }
 
