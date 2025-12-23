@@ -25,10 +25,13 @@ class SecurityConfig(
             .cors { it.configurationSource(corsConfigurationSource()) }
             .authorizeExchange { auth ->
                 auth
-                    // 인증 없이 접근 가능한 엔드포인트
+                    // 정적 파일 및 프론트엔드 (인증 불필요)
+                    .pathMatchers("/app/**").permitAll()
+                    // 인증 없이 접근 가능한 API 엔드포인트
                     .pathMatchers("/api/auth/**").permitAll()
                     .pathMatchers("/api/cards/**").permitAll()
                     .pathMatchers("/api/trending/**").permitAll()
+                    .pathMatchers("/api/health").permitAll()
                     .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
                     // 그 외 모든 요청은 인증 필요
                     .anyExchange().authenticated()
