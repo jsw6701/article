@@ -1,0 +1,30 @@
+# Build outputs
+build/
+.gradle/
+out/
+
+# IDE
+.idea/
+*.iml
+*.iws
+.vscode/
+
+# Logs
+logs/
+*.log
+
+# Local config
+application-local.yml
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Others
+*.md
+LICENSE
