@@ -18,13 +18,15 @@ class CardReadService(
     fun listCards(filter: CardListFilter): List<CardListItem> {
         return cardQuery.listCards(filter).map { row ->
             val (cardJson, conclusion) = parseContentJson(row.cardContentJson)
-            
+
             CardListItem(
                 issueId = row.issueId,
                 issueFingerprint = row.issueFingerprint,
                 issueGroup = row.issueGroup,
                 issueTitle = row.issueTitle,
                 issueLastPublishedAt = row.issueLastPublishedAt,
+                articleCount = row.issueArticleCount,
+                publisherCount = row.issuePublisherCount,
                 cardStatus = row.cardStatus,
                 cardUpdatedAt = row.cardUpdatedAt,
                 conclusion = conclusion,
@@ -34,10 +36,21 @@ class CardReadService(
     }
 
     /**
-     * 카드 상세 조회
+     * 카드 상세 조회 (기사 목록 포함)
      */
     fun getCard(issueId: Long): CardDetail? {
         val row = cardQuery.getCard(issueId) ?: return null
+
+        // 2-step: 기사 목록 조회 (최신순, 최대 15개)
+        val articles = cardQuery.getArticlesByIssueId(issueId, limit = 15)
+            .map { articleRow ->
+                ArticleSummary(
+                    title = articleRow.title,
+                    link = articleRow.link,
+                    publisher = articleRow.publisher,
+                    publishedAt = articleRow.publishedAt
+                )
+            }
 
         return CardDetail(
             issueId = row.issueId,
@@ -52,7 +65,8 @@ class CardReadService(
             cardModel = row.cardModel,
             cardCreatedAt = row.cardCreatedAt,
             cardUpdatedAt = row.cardUpdatedAt,
-            cardJson = row.cardContentJson
+            cardJson = row.cardContentJson,
+            articles = articles
         )
     }
 
@@ -69,6 +83,8 @@ class CardReadService(
                 issueGroup = row.issueGroup,
                 issueTitle = row.issueTitle,
                 issueLastPublishedAt = row.issueLastPublishedAt,
+                articleCount = row.issueArticleCount,
+                publisherCount = row.issuePublisherCount,
                 cardStatus = row.cardStatus,
                 cardUpdatedAt = row.cardUpdatedAt,
                 conclusion = conclusion,
@@ -98,6 +114,8 @@ data class CardListItem(
     val issueGroup: String,
     val issueTitle: String,
     val issueLastPublishedAt: LocalDateTime,
+    val articleCount: Int,
+    val publisherCount: Int,
     val cardStatus: String,
     val cardUpdatedAt: LocalDateTime,
     val conclusion: String?,
@@ -120,5 +138,16 @@ data class CardDetail(
     val cardModel: String,
     val cardCreatedAt: LocalDateTime,
     val cardUpdatedAt: LocalDateTime,
-    val cardJson: String?
+    val cardJson: String?,
+    val articles: List<ArticleSummary> = emptyList()
+)
+
+/**
+ * 기사 요약 (출처/증거 표시용)
+ */
+data class ArticleSummary(
+    val title: String,
+    val link: String,
+    val publisher: String,
+    val publishedAt: LocalDateTime
 )

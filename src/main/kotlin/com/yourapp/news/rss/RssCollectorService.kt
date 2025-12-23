@@ -13,6 +13,7 @@ import java.time.temporal.ChronoUnit
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.util.HtmlUtils
 
 @Service
 class RssCollectorService(
@@ -86,8 +87,8 @@ class RssCollectorService(
     }
 
     private fun toArticle(entry: SyndEntry, feedUrl: String): Article? {
-        val title = entry.title?.trim().orEmpty()
-        val summary = (entry.description?.value ?: "").trim()
+        val title = entry.title?.trim().orEmpty().decodeHtmlEntities()
+        val summary = (entry.description?.value ?: "").trim().decodeHtmlEntities()
         if (title.length < 8 || summary.length < 20) {
             return null
         }
@@ -128,5 +129,12 @@ class RssCollectorService(
         return runCatching {
             URI(url).host ?: url.take(50)
         }.getOrDefault(url.take(50))
+    }
+
+    /**
+     * HTML 엔티티 디코딩 (&#039; → ', &amp; → &, &lt; → < 등)
+     */
+    private fun String.decodeHtmlEntities(): String {
+        return HtmlUtils.htmlUnescape(this)
     }
 }

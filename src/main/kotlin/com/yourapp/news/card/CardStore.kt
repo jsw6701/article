@@ -1,5 +1,6 @@
 package com.yourapp.news.card
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
@@ -16,6 +17,7 @@ import java.time.LocalDateTime
 class CardStore(private val database: Database) {
 
     private val log = LoggerFactory.getLogger(javaClass)
+    private val objectMapper = jacksonObjectMapper()
 
     /**
      * 카드 upsert (issueId 기준)
@@ -74,6 +76,25 @@ class CardStore(private val database: Database) {
             .where { (Cards.issueId eq issueId) and (Cards.status eq CardStatus.ACTIVE.name) }
             .limit(1)
             .any()
+    }
+
+    /**
+     * 이슈의 카드에서 conclusion만 추출
+     */
+    fun findConclusionByIssueId(issueId: Long): String? = transaction(database) {
+        val card = Cards.selectAll()
+            .where { (Cards.issueId eq issueId) and (Cards.status eq CardStatus.ACTIVE.name) }
+            .singleOrNull()
+            ?: return@transaction null
+
+        val json = card[Cards.contentJson]
+        try {
+            val node = objectMapper.readTree(json)
+            node.get("conclusion")?.asText()
+        } catch (e: Exception) {
+            log.warn("Failed to parse conclusion from card: {}", e.message)
+            null
+        }
     }
 
     private fun ResultRow.toCard(): Card = Card(

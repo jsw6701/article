@@ -25,7 +25,7 @@ class PipelineScheduler(
      * 스케줄 실행
      * cron 표현식은 application.yml에서 설정
      */
-    @Scheduled(cron = "\${news.pipeline.cron:0 */20 * * * *}")
+    @Scheduled(cron = "\${news.pipeline.cron:0 */10 * * * *}")
     fun scheduledRun() {
         if (!properties.enabled) {
             log.debug("Pipeline is disabled, skipping scheduled run")

@@ -1,5 +1,7 @@
 package com.yourapp.news.card
 
+import com.yourapp.news.article.Articles
+import com.yourapp.news.issue.IssueArticles
 import com.yourapp.news.issue.Issues
 import org.jetbrains.exposed.v1.core.JoinType
 import org.jetbrains.exposed.v1.core.ResultRow
@@ -7,6 +9,7 @@ import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.lessEq
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.selectAll
@@ -81,6 +84,8 @@ class CardQuery(private val database: Database) {
         issueGroup = this[Issues.group],
         issueTitle = this[Issues.title],
         issueLastPublishedAt = this[Issues.lastPublishedAt],
+        issueArticleCount = this[Issues.articleCount],
+        issuePublisherCount = this[Issues.publisherCount],
         cardStatus = this[Cards.status],
         cardUpdatedAt = this[Cards.updatedAt],
         cardContentJson = this[Cards.contentJson]
@@ -101,7 +106,45 @@ class CardQuery(private val database: Database) {
         cardUpdatedAt = this[Cards.updatedAt],
         cardContentJson = this[Cards.contentJson]
     )
+
+    /**
+     * 이슈에 연결된 기사 목록 조회 (2-step: issueId → articleLinks → articles)
+     * 최신순 정렬, limit 적용, distinctBy link
+     */
+    fun getArticlesByIssueId(issueId: Long, limit: Int = 15): List<ArticleRow> = transaction(database) {
+        // Step 1: issue_articles에서 해당 이슈의 article_link 목록 조회
+        val articleLinks = IssueArticles.selectAll()
+            .where { IssueArticles.issueId eq issueId }
+            .map { it[IssueArticles.articleLink] }
+
+        if (articleLinks.isEmpty()) return@transaction emptyList()
+
+        // Step 2: articles 테이블에서 해당 링크들의 기사 조회
+        Articles.selectAll()
+            .where { Articles.link inList articleLinks }
+            .orderBy(Articles.publishedAt, SortOrder.DESC)
+            .limit(limit)
+            .map { row ->
+                ArticleRow(
+                    title = row[Articles.title],
+                    link = row[Articles.link],
+                    publisher = row[Articles.publisher],
+                    publishedAt = row[Articles.publishedAt]
+                )
+            }
+            .distinctBy { it.link }
+    }
 }
+
+/**
+ * 기사 Row (DB 조회 결과)
+ */
+data class ArticleRow(
+    val title: String,
+    val link: String,
+    val publisher: String,
+    val publishedAt: LocalDateTime
+)
 
 /**
  * 카드 리스트 필터
@@ -124,6 +167,8 @@ data class CardListRow(
     val issueGroup: String,
     val issueTitle: String,
     val issueLastPublishedAt: LocalDateTime,
+    val issueArticleCount: Int,
+    val issuePublisherCount: Int,
     val cardStatus: String,
     val cardUpdatedAt: LocalDateTime,
     val cardContentJson: String

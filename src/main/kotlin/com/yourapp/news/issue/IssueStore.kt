@@ -1,12 +1,13 @@
 package com.yourapp.news.issue
 
 import com.yourapp.news.article.Article
-import org.jetbrains.exposed.v1.core.Op
+import com.yourapp.news.article.Articles
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.and
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.core.greaterEq
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.insertIgnore
@@ -100,7 +101,7 @@ class IssueStore(private val database: Database) {
     }
 
     /**
-     * 이슈에 여러 기사 매핑 추가
+     * 이슈에 여러 기사 매핑 추가 후 카운트 동기화
      */
     fun addArticlesToIssue(issueId: Long, articles: List<Article>): Int = transaction(database) {
         var addedCount = 0
@@ -109,7 +110,43 @@ class IssueStore(private val database: Database) {
                 addedCount++
             }
         }
+
+        // 실제 카운트 동기화
+        if (addedCount > 0) {
+            syncIssueCounts(issueId)
+        }
+
         addedCount
+    }
+
+    /**
+     * 이슈의 articleCount, publisherCount를 실제 데이터 기준으로 동기화
+     */
+    fun syncIssueCounts(issueId: Long): Unit = transaction(database) {
+        // Step 1: 해당 이슈의 기사 링크 목록 조회
+        val articleLinks = IssueArticles.selectAll()
+            .where { IssueArticles.issueId eq issueId }
+            .map { it[IssueArticles.articleLink] }
+            .distinct()
+
+        if (articleLinks.isEmpty()) return@transaction
+
+        // Step 2: Articles에서 publisher 목록 조회
+        val publishers = Articles.selectAll()
+            .where { Articles.link inList articleLinks }
+            .map { it[Articles.publisher] }
+            .distinct()
+
+        val actualArticleCount = articleLinks.size
+        val actualPublisherCount = publishers.size
+
+        Issues.update({ Issues.id eq issueId }) {
+            it[articleCount] = actualArticleCount
+            it[publisherCount] = actualPublisherCount
+        }
+
+        log.debug("Synced issue counts: issueId={}, articleCount={}, publisherCount={}",
+            issueId, actualArticleCount, actualPublisherCount)
     }
 
     /**
