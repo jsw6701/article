@@ -1,14 +1,56 @@
 spring:
   application:
     name: article
-  datasource:
-    url: jdbc:mysql://localhost:3306/article?useSSL=false&serverTimezone=UTC&characterEncoding=UTF-8
-    username: your_username
-    password: your_password
-    driver-class-name: com.mysql.cj.jdbc.Driver
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
+# RSS 수집 설정 (공통)
 news:
   rss:
     feeds:
-      - https://example.com/economy/rss
-      - https://another-news.com/rss
+      - https://www.mk.co.kr/rss/30100041/          # 매경 경제
+      - https://www.hankyung.com/feed/economy       # 한경 경제
+      - http://rss.edaily.co.kr/economy_news.xml    # 이데일리 경제/정책
+      - http://rss.mt.co.kr/mt_news.xml             # 머니투데이 최신
+      - http://www.yonhapnews.co.kr/RSS/economy.xml # 연합뉴스 경제
+      - https://www.hani.co.kr/rss/economy/        # 한겨레 경제
+      - https://www.khan.co.kr/rss/rssdata/economy_news.xml # 경향신문 경제
+      - https://rss.donga.com/economy.xml          # 동아일보 경제
+      - https://www.chosun.com/arc/outboundfeeds/rss/category/economy/?outputType=xml # 조선일보 경제
+      - https://newsis.com/RSS/economy.xml      # 뉴시스 경제
+      - https://newsis.com/RSS/industry.xml  # 뉴시스 산업
+      - https://newsis.com/RSS/bank.xml   # 뉴시스 금융
+      - http://rss.kmib.co.kr/data/kmibEcoRss.xml # 국민일보 경제
+      - https://www.pressian.com/api/v3/site/rss/section/67  # 프레시안 경제
+      - https://www.sisain.co.kr/rss/S1N7.xml # 시사인 경제
+      - https://www.labortoday.co.kr/rss/allArticle.xml # 노동투데이 경제
+
+# Gemini API 설정
+gemini:
+  model: gemini-2.5-flash
+  timeout-ms: 15000
+  max-retries: 2
+
+# Swagger/OpenAPI 설정
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+
+# 로깅 설정 (공통)
+logging:
+  level:
+    root: INFO
+    com.yourapp.news: INFO
+    com.yourapp.news.pipeline: INFO
+    com.yourapp.news.rss: INFO
+    com.yourapp.news.llm: INFO
+    org.springframework.web: WARN
+    org.jetbrains.exposed: WARN
+  file:
+    path: logs
