@@ -24,6 +24,7 @@ val exposedVersion = "1.0.0-rc-2"
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
@@ -33,6 +34,14 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
 
     implementation("com.rometools:rome:1.18.0")
+
+    // JWT
+    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+
+    // Password Encoding
+    implementation("org.springframework.security:spring-security-crypto")
 
     // Swagger/OpenAPI - WebFlux용
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.8")

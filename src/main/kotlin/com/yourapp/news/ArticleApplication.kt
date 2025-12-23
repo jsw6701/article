@@ -1,5 +1,6 @@
 package com.yourapp.news
 
+import com.yourapp.news.auth.JwtProperties
 import com.yourapp.news.config.CorsProperties
 import com.yourapp.news.llm.gemini.GeminiProperties
 import com.yourapp.news.pipeline.PipelineProperties
@@ -15,7 +16,8 @@ import org.springframework.scheduling.annotation.EnableScheduling
     RssProperties::class,
     GeminiProperties::class,
     PipelineProperties::class,
-    CorsProperties::class
+    CorsProperties::class,
+    JwtProperties::class
 )
 class ArticleApplication
 
