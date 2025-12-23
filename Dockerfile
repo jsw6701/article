@@ -11,13 +11,13 @@ COPY src ./src
 
 RUN gradle bootJar --no-daemon -x test
 
-# Runtime
-FROM eclipse-temurin:21-jre-alpine
+# Runtime - Alpine 대신 일반 JRE 사용 (Netty SSL 호환성)
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-RUN addgroup -g 1001 appgroup && \
-    adduser -u 1001 -G appgroup -D appuser
+RUN groupadd -g 1001 appgroup && \
+    useradd -u 1001 -g appgroup -m appuser
 
 COPY --from=builder /app/build/libs/*.jar app.jar
 

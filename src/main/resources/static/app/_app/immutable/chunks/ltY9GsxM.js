@@ -1,0 +1,1 @@
+import{q as o,r as l,v as t,l as u,u as a}from"./DyPSrcml.js";function f(n){t===null&&o(),u&&t.l!==null?c(t).m.push(n):l(()=>{const e=a(n);if(typeof e=="function")return e})}function c(n){var e=n.l;return e.u??={a:[],b:[],m:[]}}export{f as o};
