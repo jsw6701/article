@@ -3,6 +3,10 @@ spring:
     name: article
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
+  web:
+    resources:
+      static-locations: classpath:/static/
+      add-mappings: true
 
 # RSS 수집 설정 (공통)
 news:

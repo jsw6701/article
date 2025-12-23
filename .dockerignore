@@ -2,6 +2,7 @@
 build/
 .gradle/
 out/
+node_modules/
 
 # IDE
 .idea/
@@ -20,11 +21,8 @@ application-local.yml
 .git/
 .gitignore
 
-# Docker
-Dockerfile
-docker-compose*.yml
-.dockerignore
-
 # Others
 *.md
 LICENSE
+*.bat
+*.sh
