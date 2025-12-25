@@ -5,8 +5,8 @@ import com.rometools.rome.io.SyndFeedInput
 import com.rometools.rome.io.XmlReader
 import com.yourapp.news.article.Article
 import com.yourapp.news.article.ArticleStore
-import java.net.URI
 import java.io.ByteArrayInputStream
+import java.net.URI
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
@@ -32,41 +32,41 @@ class RssCollectorService(
     fun collectAll(): Int = collect()
 
     fun collect(): Int {
-        if (rssProperties.feeds.isEmpty()) {
+        if (rssProperties.sources.isEmpty()) {
             log.info("[RSS] No feeds configured, skipping collection")
             return 0
         }
 
-        log.info("[RSS] Starting collection from {} feeds", rssProperties.feeds.size)
+        log.info("[RSS] Starting collection from {} feeds", rssProperties.sources.size)
         val startTime = System.currentTimeMillis()
 
         var totalSaved = 0
         var successCount = 0
         var failCount = 0
 
-        rssProperties.feeds.forEach { feedUrl ->
-            runCatching { fetchFeed(feedUrl) }
+        rssProperties.sources.forEach { source ->
+            runCatching { fetchFeed(source.url) }
                 .onSuccess { entries ->
-                    val articles = entries.mapNotNull { toArticle(it, feedUrl) }
+                    val articles = entries.mapNotNull { toArticle(it, source.publisher) }
                     val saved = if (articles.isNotEmpty()) {
                         articleStore.saveAll(articles)
                     } else 0
-                    
+
                     totalSaved += saved
                     successCount++
                     log.info("[RSS] Feed success: url={}, entries={}, saved={}",
-                        maskUrl(feedUrl), entries.size, saved)
+                        maskUrl(source.url), entries.size, saved)
                 }
                 .onFailure { throwable ->
                     failCount++
                     log.warn("[RSS] Feed failed: url={}, error={}",
-                        maskUrl(feedUrl), throwable.message)
+                        maskUrl(source.url), throwable.message)
                 }
         }
 
         val elapsed = System.currentTimeMillis() - startTime
         log.info("[RSS] Collection complete: totalFeeds={}, success={}, failed={}, totalSaved={}, elapsedMs={}",
-            rssProperties.feeds.size, successCount, failCount, totalSaved, elapsed)
+            rssProperties.sources.size, successCount, failCount, totalSaved, elapsed)
 
         return totalSaved
     }
@@ -86,7 +86,7 @@ class RssCollectorService(
         }
     }
 
-    private fun toArticle(entry: SyndEntry, feedUrl: String): Article? {
+    private fun toArticle(entry: SyndEntry, publisher: String): Article? {
         val title = entry.title?.trim().orEmpty().decodeHtmlEntities()
         val summary = (entry.description?.value ?: "").trim().decodeHtmlEntities()
         if (title.length < 8 || summary.length < 20) {
@@ -103,20 +103,13 @@ class RssCollectorService(
             return null
         }
 
-        val publisherFromSource = entry.source?.title
-        val publisher = publisherFromSource
-            ?: entry.author?.takeIf { it.isNotBlank() }
-            ?: runCatching { URI(feedUrl).host?.removePrefix("www.")?.takeIf { it.isNotBlank() } }
-                .getOrNull()
-            ?: "unknown"
-
         val link = entry.link?.takeIf { it.isNotBlank() } ?: return null
 
         return Article(
             title = title,
             summary = summary,
             link = link,
-            publisher = publisher,
+            publisher = publisher, // 설정에서 지정한 매체명 사용
             publishedAt = publishedAt.truncatedTo(ChronoUnit.SECONDS),
             category = "economy",
         )
