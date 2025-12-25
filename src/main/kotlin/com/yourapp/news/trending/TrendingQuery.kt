@@ -56,7 +56,9 @@ class TrendingQuery(private val database: Database) {
                 it[Issues.id] to IssueInfo(
                     issueId = it[Issues.id],
                     issueTitle = it[Issues.title],
-                    issueGroup = it[Issues.group]
+                    issueGroup = it[Issues.group],
+                    headline = it[Issues.headline],
+                    signalSummary = it[Issues.signalSummary]
                 )
             }
 
@@ -89,6 +91,8 @@ class TrendingQuery(private val database: Database) {
                     issueId = stats.issueId,
                     issueTitle = info.issueTitle,
                     issueGroup = info.issueGroup,
+                    headline = info.headline,
+                    signalSummary = info.signalSummary,
                     recentArticleCount = stats.articleLinks.size,
                     recentPublisherCount = stats.publishers.size,
                     lastPublishedAt = stats.lastPublishedAt
@@ -107,7 +111,9 @@ class TrendingQuery(private val database: Database) {
     private data class IssueInfo(
         val issueId: Long,
         val issueTitle: String,
-        val issueGroup: String
+        val issueGroup: String,
+        val headline: String?,
+        val signalSummary: String?
     )
 
     private data class MutableIssueStats(
@@ -125,6 +131,8 @@ data class IssueStats(
     val issueId: Long,
     val issueTitle: String,
     val issueGroup: String,
+    val headline: String?,
+    val signalSummary: String?,
     val recentArticleCount: Int,
     val recentPublisherCount: Int,
     val lastPublishedAt: LocalDateTime

@@ -58,6 +58,8 @@ class TrendingService(
                 issueId = stat.issueId,
                 issueTitle = stat.issueTitle,
                 issueGroup = stat.issueGroup,
+                headline = stat.headline,
+                signalSummary = stat.signalSummary,
                 articleCount = stat.recentArticleCount,
                 publisherCount = stat.recentPublisherCount,
                 lastPublishedAt = stat.lastPublishedAt,
@@ -116,6 +118,8 @@ data class TrendingIssue(
     val issueId: Long,
     val issueTitle: String,
     val issueGroup: String,
+    val headline: String?, // 사용자에게 노출되는 제목
+    val signalSummary: String?, // 리스트 카드용 한 줄 요약
     val articleCount: Int,
     val publisherCount: Int,
     val lastPublishedAt: LocalDateTime,
