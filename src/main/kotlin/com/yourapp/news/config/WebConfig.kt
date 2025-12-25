@@ -2,16 +2,17 @@ package com.yourapp.news.config
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
 import org.springframework.core.io.ClassPathResource
-import org.springframework.core.io.Resource
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.web.reactive.config.EnableWebFlux
 import org.springframework.web.reactive.config.ResourceHandlerRegistry
 import org.springframework.web.reactive.config.WebFluxConfigurer
-import org.springframework.web.reactive.function.BodyInserters
-import org.springframework.web.reactive.function.server.RouterFunction
-import org.springframework.web.reactive.function.server.ServerResponse
-import org.springframework.web.reactive.function.server.router
+import org.springframework.web.server.ServerWebExchange
+import org.springframework.web.server.WebFilter
+import org.springframework.web.server.WebFilterChain
+import reactor.core.publisher.Mono
 
 @Configuration
 @EnableWebFlux
@@ -24,61 +25,58 @@ class WebConfig : WebFluxConfigurer {
     }
 
     /**
-     * SPA fallback: /app 하위의 모든 경로는 index.html 반환
-     * 정적 파일이 존재하면 정적 파일 반환, 없으면 index.html 반환
+     * /app 요청을 /app/로 리다이렉트
      */
     @Bean
-    fun spaFallbackRouter(): RouterFunction<ServerResponse> = router {
-        val indexHtml = ClassPathResource("static/app/index.html")
-
-        // /app 리다이렉트
-        GET("/app") {
-            ServerResponse.permanentRedirect(java.net.URI.create("/app/")).build()
-        }
-
-        // /app/** 모든 경로 처리
-        GET("/app/{*path}") { request ->
-            val path = request.pathVariable("path")
-
-            if (path.isEmpty()) {
-                // /app/ 메인 페이지
-                ServerResponse.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(BodyInserters.fromResource(indexHtml))
-            } else {
-                // 정적 파일이 존재하는지 확인
-                val staticResource: Resource = ClassPathResource("static/app/$path")
-                if (staticResource.exists() && staticResource.isReadable) {
-                    // 정적 파일 반환
-                    val contentType = getContentType(path)
-                    ServerResponse.ok()
-                        .contentType(contentType)
-                        .body(BodyInserters.fromResource(staticResource))
-                } else {
-                    // SPA 라우트 - index.html 반환
-                    ServerResponse.ok()
-                        .contentType(MediaType.TEXT_HTML)
-                        .body(BodyInserters.fromResource(indexHtml))
-                }
-            }
+    @Order(-2)
+    fun appRedirectFilter(): WebFilter = WebFilter { exchange, chain ->
+        val path = exchange.request.uri.path
+        if (path == "/app") {
+            exchange.response.statusCode = HttpStatus.PERMANENT_REDIRECT
+            exchange.response.headers.location = java.net.URI.create("/app/")
+            exchange.response.setComplete()
+        } else {
+            chain.filter(exchange)
         }
     }
 
-    private fun getContentType(path: String): MediaType {
-        return when {
-            path.endsWith(".js") -> MediaType.parseMediaType("application/javascript")
-            path.endsWith(".css") -> MediaType.parseMediaType("text/css")
-            path.endsWith(".json") -> MediaType.APPLICATION_JSON
-            path.endsWith(".html") -> MediaType.TEXT_HTML
-            path.endsWith(".svg") -> MediaType.parseMediaType("image/svg+xml")
-            path.endsWith(".png") -> MediaType.IMAGE_PNG
-            path.endsWith(".jpg") || path.endsWith(".jpeg") -> MediaType.IMAGE_JPEG
-            path.endsWith(".ico") -> MediaType.parseMediaType("image/x-icon")
-            path.endsWith(".woff") -> MediaType.parseMediaType("font/woff")
-            path.endsWith(".woff2") -> MediaType.parseMediaType("font/woff2")
-            path.endsWith(".ttf") -> MediaType.parseMediaType("font/ttf")
-            path.endsWith(".txt") -> MediaType.TEXT_PLAIN
-            else -> MediaType.APPLICATION_OCTET_STREAM
+    /**
+     * SPA fallback: /app/** 경로에서 404 발생 시 index.html 반환
+     */
+    @Bean
+    @Order(-1)
+    fun spaFallbackFilter(): WebFilter = WebFilter { exchange, chain ->
+        val path = exchange.request.uri.path
+
+        // /app/** 경로가 아니면 그냥 통과
+        if (!path.startsWith("/app/")) {
+            return@WebFilter chain.filter(exchange)
         }
+
+        // 정적 파일 요청은 그냥 통과 (ResourceHandler가 처리)
+        if (hasFileExtension(path)) {
+            return@WebFilter chain.filter(exchange)
+        }
+
+        // SPA 라우트 요청 - index.html 반환
+        serveIndexHtml(exchange)
+    }
+
+    private fun hasFileExtension(path: String): Boolean {
+        val lastSegment = path.substringAfterLast('/')
+        return lastSegment.contains('.') && !lastSegment.startsWith('.')
+    }
+
+    private fun serveIndexHtml(exchange: ServerWebExchange): Mono<Void> {
+        val indexHtml = ClassPathResource("static/app/index.html")
+        exchange.response.statusCode = HttpStatus.OK
+        exchange.response.headers.contentType = MediaType.TEXT_HTML
+
+        return exchange.response.writeWith(
+            Mono.fromCallable {
+                val bytes = indexHtml.inputStream.readBytes()
+                exchange.response.bufferFactory().wrap(bytes)
+            }
+        )
     }
 }
