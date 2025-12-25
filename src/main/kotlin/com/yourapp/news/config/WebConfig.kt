@@ -23,7 +23,8 @@ class WebConfig : WebFluxConfigurer {
     }
 
     /**
-     * SPA fallback: /app 또는 확장자 없는 경로는 index.html 반환
+     * SPA fallback: /app 하위의 모든 경로는 index.html 반환
+     * (정적 파일 요청 제외 - ResourceHandler가 먼저 처리)
      */
     @Bean
     fun spaFallbackRouter(): RouterFunction<ServerResponse> = router {
@@ -33,22 +34,19 @@ class WebConfig : WebFluxConfigurer {
         GET("/app") {
             ServerResponse.permanentRedirect(java.net.URI.create("/app/")).build()
         }
-        // /app/ 메인 페이지
-        GET("/app/") {
-            ServerResponse.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .body(BodyInserters.fromResource(indexHtml))
-        }
-        // /app/login, /app/signup 등 SPA 라우트 (확장자 없는 경로만)
-        GET("/app/login") {
-            ServerResponse.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .body(BodyInserters.fromResource(indexHtml))
-        }
-        GET("/app/signup") {
-            ServerResponse.ok()
-                .contentType(MediaType.TEXT_HTML)
-                .body(BodyInserters.fromResource(indexHtml))
+
+        // /app/** 모든 SPA 라우트 처리 (확장자 없는 경로만)
+        GET("/app/{*path}") { request ->
+            val path = request.pathVariable("path")
+            // 정적 파일 요청이 아닌 경우에만 index.html 반환
+            if (path.isEmpty() || !path.contains(".")) {
+                ServerResponse.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(BodyInserters.fromResource(indexHtml))
+            } else {
+                // 정적 파일은 ResourceHandler가 처리하도록 404 반환
+                ServerResponse.notFound().build()
+            }
         }
     }
 }
