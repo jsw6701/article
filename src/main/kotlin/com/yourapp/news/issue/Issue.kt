@@ -15,7 +15,9 @@ data class Issue(
     val articleCount: Int,
     val publisherCount: Int,
     val status: IssueStatus = IssueStatus.OPEN,
-    val fingerprint: String
+    val fingerprint: String,
+    val headline: String? = null, // 사용자에게 노출되는 제목 (예: "서울 아파트 가격, 다시 상승 압력")
+    val signalSummary: String? = null // 리스트 카드용 한 줄 요약 (예: "왜 지금 중요한지 한 줄")
 )
 
 enum class IssueStatus {

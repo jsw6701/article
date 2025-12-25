@@ -120,6 +120,16 @@ class IssueStore(private val database: Database) {
     }
 
     /**
+     * 이슈의 headline, signalSummary 업데이트 (카드 생성 후 호출)
+     */
+    fun updateHeadline(issueId: Long, headline: String?, signalSummary: String?): Int = transaction(database) {
+        Issues.update({ Issues.id eq issueId }) {
+            it[Issues.headline] = headline
+            it[Issues.signalSummary] = signalSummary
+        }
+    }
+
+    /**
      * 이슈의 articleCount, publisherCount를 실제 데이터 기준으로 동기화
      */
     fun syncIssueCounts(issueId: Long): Unit = transaction(database) {
@@ -206,6 +216,8 @@ class IssueStore(private val database: Database) {
         articleCount = this[Issues.articleCount],
         publisherCount = this[Issues.publisherCount],
         status = IssueStatus.valueOf(this[Issues.status]),
-        fingerprint = this[Issues.fingerprint]
+        fingerprint = this[Issues.fingerprint],
+        headline = this[Issues.headline],
+        signalSummary = this[Issues.signalSummary]
     )
 }

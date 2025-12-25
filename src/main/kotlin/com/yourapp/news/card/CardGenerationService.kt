@@ -145,8 +145,29 @@ class CardGenerationService(
             )
         )
 
+        // 7. Issue에 headline, signalSummary 저장
+        updateIssueHeadline(issueId, geminiResult.jsonContent)
+
         log.info("Generated card {} for issue {}", cardId, issueId)
         return CardGenerationResult.success(cardId, geminiResult.jsonContent)
+    }
+
+    /**
+     * GPT 응답에서 headline, signalSummary를 파싱하여 Issue에 저장
+     */
+    private fun updateIssueHeadline(issueId: Long, json: String) {
+        try {
+            val card: Map<String, Any> = objectMapper.readValue(json)
+            val headline = card["headline"] as? String
+            val signalSummary = card["signal_summary"] as? String
+
+            if (headline != null || signalSummary != null) {
+                issueStore.updateHeadline(issueId, headline, signalSummary)
+                log.debug("Updated issue {} headline: {}", issueId, headline)
+            }
+        } catch (e: Exception) {
+            log.warn("Failed to parse headline from card JSON for issue {}: {}", issueId, e.message)
+        }
     }
 
     /**
@@ -161,7 +182,7 @@ class CardGenerationService(
 
             // 필수 필드 확인
             val requiredFields = listOf(
-                "issue_title", "conclusion", "why_it_matters",
+                "headline", "signal_summary", "issue_title", "conclusion", "why_it_matters",
                 "evidence", "counter_scenario", "impact", "action_guide"
             )
             for (field in requiredFields) {

@@ -24,6 +24,8 @@ class CardReadService(
                 issueFingerprint = row.issueFingerprint,
                 issueGroup = row.issueGroup,
                 issueTitle = row.issueTitle,
+                headline = row.issueHeadline,
+                signalSummary = row.issueSignalSummary,
                 issueLastPublishedAt = row.issueLastPublishedAt,
                 articleCount = row.issueArticleCount,
                 publisherCount = row.issuePublisherCount,
@@ -57,6 +59,8 @@ class CardReadService(
             issueFingerprint = row.issueFingerprint,
             issueGroup = row.issueGroup,
             issueTitle = row.issueTitle,
+            headline = row.issueHeadline,
+            signalSummary = row.issueSignalSummary,
             issueFirstPublishedAt = row.issueFirstPublishedAt,
             issueLastPublishedAt = row.issueLastPublishedAt,
             issueArticleCount = row.issueArticleCount,
@@ -82,6 +86,8 @@ class CardReadService(
                 issueFingerprint = row.issueFingerprint,
                 issueGroup = row.issueGroup,
                 issueTitle = row.issueTitle,
+                headline = row.issueHeadline,
+                signalSummary = row.issueSignalSummary,
                 issueLastPublishedAt = row.issueLastPublishedAt,
                 articleCount = row.issueArticleCount,
                 publisherCount = row.issuePublisherCount,
@@ -113,6 +119,8 @@ data class CardListItem(
     val issueFingerprint: String,
     val issueGroup: String,
     val issueTitle: String,
+    val headline: String?, // 사용자에게 노출되는 제목
+    val signalSummary: String?, // 리스트 카드용 한 줄 요약
     val issueLastPublishedAt: LocalDateTime,
     val articleCount: Int,
     val publisherCount: Int,
@@ -130,6 +138,8 @@ data class CardDetail(
     val issueFingerprint: String,
     val issueGroup: String,
     val issueTitle: String,
+    val headline: String?, // 사용자에게 노출되는 제목
+    val signalSummary: String?, // 리스트 카드용 한 줄 요약
     val issueFirstPublishedAt: LocalDateTime,
     val issueLastPublishedAt: LocalDateTime,
     val issueArticleCount: Int,

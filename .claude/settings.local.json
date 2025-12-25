@@ -3,7 +3,20 @@
     "allow": [
       "Bash(gradlew.bat compileKotlin:*)",
       "Bash(cmd /c \"gradlew.bat compileKotlin --quiet\")",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(cmd /c \"gradlew.bat compileKotlin 2>&1\")",
+      "Bash(cmd /c \"gradlew.bat bootRun 2>&1\")",
+      "Bash(dir \"C:\\front\\news-briefing-frontend\\src\" /b)",
+      "Bash(cmd /c \"cd /d C:\\ToyProject\\article && gradlew.bat compileKotlin 2>&1\")",
+      "Bash(cmd /c \"cd /d C:\\ToyProject\\article && gradlew.bat test 2>&1\")",
+      "Bash(cmd /c \"cd /d C:\\ToyProject\\article && gradlew.bat bootRun 2>&1\")",
+      "Bash(timeout /t 30 /nobreak)",
+      "Bash(cmd /c \"cd /d C:\\ToyProject\\article && gradlew.bat compileKotlin --quiet 2>&1\")",
+      "Bash(cmd /c \"cd /d C:\\front\\news-briefing-frontend && npm run build:static 2>&1\")",
+      "Bash(cmd /c \"cd C:\\front\\news-briefing-frontend && npm run build:static\")",
+      "Bash(C:)",
+      "Bash(npm run build:static:*)",
+      "Bash(cmd /c \"C: && cd C:\\front\\news-briefing-frontend && npm run build:static\")"
     ],
     "deny": [],
     "ask": []
