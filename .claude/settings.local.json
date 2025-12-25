@@ -16,7 +16,8 @@
       "Bash(cmd /c \"cd C:\\front\\news-briefing-frontend && npm run build:static\")",
       "Bash(C:)",
       "Bash(npm run build:static:*)",
-      "Bash(cmd /c \"C: && cd C:\\front\\news-briefing-frontend && npm run build:static\")"
+      "Bash(cmd /c \"C: && cd C:\\front\\news-briefing-frontend && npm run build:static\")",
+      "Bash(dir /s /b \"C:\\ToyProject\\article\\src\\main\\resources\\static\\app\")"
     ],
     "deny": [],
     "ask": []
