@@ -112,6 +112,32 @@ class CardQuery(private val database: Database) {
     )
 
     /**
+     * cardId로 카드 조회
+     */
+    fun getCardByCardId(cardId: Long): CardListRow? = transaction(database) {
+        val joinedTable = Cards.join(Issues, JoinType.INNER, Cards.issueId, Issues.id)
+
+        joinedTable.selectAll()
+            .where { Cards.id eq cardId }
+            .singleOrNull()
+            ?.toCardListRow()
+    }
+
+    /**
+     * 여러 cardId로 카드 조회
+     */
+    fun getCardsByCardIds(cardIds: List<Long>): List<CardListRow> = transaction(database) {
+        if (cardIds.isEmpty()) return@transaction emptyList()
+
+        val joinedTable = Cards.join(Issues, JoinType.INNER, Cards.issueId, Issues.id)
+
+        joinedTable.selectAll()
+            .where { Cards.id inList cardIds }
+            .orderBy(Issues.lastPublishedAt, SortOrder.DESC)
+            .map { row -> row.toCardListRow() }
+    }
+
+    /**
      * 이슈에 연결된 기사 목록 조회 (2-step: issueId → articleLinks → articles)
      * 최신순 정렬, limit 적용, distinctBy link
      */

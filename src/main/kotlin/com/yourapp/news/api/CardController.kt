@@ -5,6 +5,7 @@ import com.yourapp.news.card.CardListFilter
 import com.yourapp.news.card.CardListItem
 import com.yourapp.news.card.CardReadService
 import com.yourapp.news.card.CardStatus
+import com.yourapp.news.card.CardViewStore
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
@@ -27,7 +28,8 @@ import java.time.format.DateTimeParseException
 @RestController
 @RequestMapping("/api/cards")
 class CardController(
-    private val cardReadService: CardReadService
+    private val cardReadService: CardReadService,
+    private val cardViewStore: CardViewStore
 ) {
 
     @Operation(
@@ -114,7 +116,7 @@ class CardController(
 
     @Operation(
         summary = "카드 상세 조회",
-        description = "특정 이슈의 결론 카드 상세 정보를 조회합니다."
+        description = "특정 이슈의 결론 카드 상세 정보를 조회합니다. 조회 시 조회수가 자동으로 1 증가합니다."
     )
     @ApiResponses(
         ApiResponse(responseCode = "200", description = "조회 성공"),
@@ -127,6 +129,12 @@ class CardController(
     ): ResponseEntity<CardDetail> {
         val card = cardReadService.getCard(issueId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Card not found for issueId: $issueId")
+
+        // 조회수 증가
+        val cardId = cardReadService.getCardIdByIssueId(issueId)
+        if (cardId != null) {
+            cardViewStore.addView(cardId)
+        }
 
         return ResponseEntity.ok(card)
     }
@@ -147,13 +155,14 @@ class CardController(
 data class CardListResponse(
     @Schema(description = "카드 목록")
     val items: List<CardListItem>,
-    
+
     @Schema(description = "현재 페이지 카드 수")
     val count: Int,
-    
+
     @Schema(description = "요청한 limit 값")
     val limit: Int,
-    
+
     @Schema(description = "요청한 offset 값")
     val offset: Int
 )
+

@@ -3,8 +3,10 @@ package com.yourapp.news.config
 import com.yourapp.news.article.Articles
 import com.yourapp.news.auth.RefreshTokens
 import com.yourapp.news.auth.Users
+import com.yourapp.news.bookmark.Bookmarks
 import com.yourapp.news.card.CardGenerationLogs
 import com.yourapp.news.card.Cards
+import com.yourapp.news.card.CardViews
 import com.yourapp.news.issue.IssueArticles
 import com.yourapp.news.issue.Issues
 import com.yourapp.news.pipeline.PipelineRuns
@@ -42,9 +44,11 @@ class ExposedConfig {
                 IssueArticles,
                 Cards,
                 CardGenerationLogs,
+                CardViews,
                 PipelineRuns,
                 Users,
-                RefreshTokens
+                RefreshTokens,
+                Bookmarks
             )
         }
     }

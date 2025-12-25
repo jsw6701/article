@@ -1,5 +1,8 @@
 package com.yourapp.news.api
 
+import com.yourapp.news.card.CardListItem
+import com.yourapp.news.card.CardReadService
+import com.yourapp.news.card.CardViewStore
 import com.yourapp.news.trending.TrendingIssue
 import com.yourapp.news.trending.TrendingService
 import io.swagger.v3.oas.annotations.Operation
@@ -17,7 +20,9 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/trending")
 class TrendingController(
-    private val trendingService: TrendingService
+    private val trendingService: TrendingService,
+    private val cardViewStore: CardViewStore,
+    private val cardReadService: CardReadService
 ) {
 
     @Operation(
@@ -55,6 +60,39 @@ class TrendingController(
             )
         )
     }
+
+    @Operation(
+        summary = "인기 카드 조회 (조회수 기준)",
+        description = "조회수가 높은 카드를 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "조회 성공")
+    @GetMapping("/popular")
+    fun getPopularCards(
+        @Parameter(description = "반환할 카드 개수 (1~20)", schema = Schema(defaultValue = "10"))
+        @RequestParam(required = false, defaultValue = "10") limit: Int
+    ): ResponseEntity<PopularCardsResponse> {
+        val validatedLimit = limit.coerceIn(1, 20)
+
+        // 조회수 상위 카드 ID와 조회수
+        val topViewed = cardViewStore.getTopViewedCardIds(validatedLimit)
+
+        // 카드 정보 조회
+        val cards = topViewed.mapNotNull { (cardId, viewCount) ->
+            cardReadService.getCardByCardId(cardId)?.let { card ->
+                PopularCard(
+                    card = card,
+                    viewCount = viewCount
+                )
+            }
+        }
+
+        return ResponseEntity.ok(
+            PopularCardsResponse(
+                items = cards,
+                count = cards.size
+            )
+        )
+    }
 }
 
 /**
@@ -66,5 +104,29 @@ data class TrendingResponse(
     val items: List<TrendingIssue>,
 
     @Schema(description = "반환된 이슈 수")
+    val count: Int
+)
+
+/**
+ * 인기 카드 (조회수 포함)
+ */
+@Schema(description = "인기 카드")
+data class PopularCard(
+    @Schema(description = "카드 정보")
+    val card: CardListItem,
+
+    @Schema(description = "조회수")
+    val viewCount: Long
+)
+
+/**
+ * 인기 카드 응답
+ */
+@Schema(description = "인기 카드 응답")
+data class PopularCardsResponse(
+    @Schema(description = "인기 카드 목록 (조회수 내림차순)")
+    val items: List<PopularCard>,
+
+    @Schema(description = "반환된 카드 수")
     val count: Int
 )
