@@ -208,38 +208,44 @@ class PromptBuilder {
     }
 
     /**
-     * 대표 기사 샘플링 전략 (토큰/품질 목적)
-     * - 최신 기사 우선
-     * - 언론사 다양성 우선 (동일 언론사 중복 최소화)
-     * - 샘플 부족하면 최신 순으로 보충
+     * 대표 기사 샘플링 전략 (사건성 점수 기반)
+     * - 사건성 점수(급변/숫자/개입 키워드 + 최신성) 높은 기사 우선
+     * - 언론사 다양성 유지 (동일 언론사 중복 최소화)
+     * - 샘플 부족하면 점수순으로 보충
      */
     private fun sampleRepresentativeArticles(all: List<Article>, desired: Int): List<Article> {
         if (all.isEmpty()) return emptyList()
 
         val target = desired.coerceIn(MIN_SAMPLE_SIZE, DEFAULT_SAMPLE_SIZE)
-        val sorted = all
-            .distinctBy { it.link } // 혹시 중복 link 있을 때 방지
-            .sortedByDescending { it.publishedAt }
+
+        // 사건성 점수로 정렬
+        val scored = all
+            .distinctBy { it.link }
+            .map { it to ArticleEventScorer.score(it) }
+            .sortedByDescending { it.second }
 
         val picked = mutableListOf<Article>()
-        val pickedPublishers = linkedSetOf<String>()
+        val usedPublishers = mutableSetOf<String>()
 
-        // 1) 언론사 다양성 우선으로 최신 기사 채우기
-        for (a in sorted) {
+        // 1) 사건성 점수 높은 기사 우선 + 언론사 다양성 유지
+        for ((article, _) in scored) {
             if (picked.size >= target) break
-            val pub = a.publisher.trim().ifBlank { "unknown" }
-            if (pub !in pickedPublishers) {
-                picked.add(a)
-                pickedPublishers.add(pub)
+
+            val publisher = article.publisher.trim().ifBlank { "unknown" }
+
+            // 아직 사용 안 한 언론사면 바로 추가
+            if (publisher !in usedPublishers) {
+                picked.add(article)
+                usedPublishers.add(publisher)
             }
         }
 
-        // 2) 부족하면 최신순으로 보충
+        // 2) 부족하면 점수순으로 보충 (언론사 중복 허용)
         if (picked.size < target) {
-            for (a in sorted) {
+            for ((article, _) in scored) {
                 if (picked.size >= target) break
-                if (picked.none { it.link == a.link }) {
-                    picked.add(a)
+                if (picked.none { it.link == article.link }) {
+                    picked.add(article)
                 }
             }
         }
