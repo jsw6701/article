@@ -19,47 +19,41 @@ import reactor.core.publisher.Mono
 class WebConfig : WebFluxConfigurer {
 
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
-        // /app/** 경로로 static/app/ 폴더의 정적 파일 서빙
         registry.addResourceHandler("/app/**")
             .addResourceLocations("classpath:/static/app/")
     }
 
-    /**
-     * /app 요청을 /app/로 리다이렉트
-     */
     @Bean
     @Order(-2)
-    fun appRedirectFilter(): WebFilter = WebFilter { exchange, chain ->
-        val path = exchange.request.uri.path
-        if (path == "/app") {
-            exchange.response.statusCode = HttpStatus.PERMANENT_REDIRECT
-            exchange.response.headers.location = java.net.URI.create("/app/")
-            exchange.response.setComplete()
-        } else {
-            chain.filter(exchange)
+    fun appRedirectFilter(): WebFilter {
+        return WebFilter { exchange: ServerWebExchange, chain: WebFilterChain ->
+            val path = exchange.request.uri.path
+            if (path == "/app") {
+                exchange.response.statusCode = HttpStatus.PERMANENT_REDIRECT
+                exchange.response.headers.location = java.net.URI.create("/app/")
+                exchange.response.setComplete()
+            } else {
+                chain.filter(exchange)
+            }
         }
     }
 
-    /**
-     * SPA fallback: /app/** 경로에서 404 발생 시 index.html 반환
-     */
     @Bean
     @Order(-1)
-    fun spaFallbackFilter(): WebFilter = WebFilter { exchange, chain ->
-        val path = exchange.request.uri.path
+    fun spaFallbackFilter(): WebFilter {
+        return WebFilter { exchange: ServerWebExchange, chain: WebFilterChain ->
+            val path = exchange.request.uri.path
 
-        // /app/** 경로가 아니면 그냥 통과
-        if (!path.startsWith("/app/")) {
-            return@WebFilter chain.filter(exchange)
+            if (!path.startsWith("/app/")) {
+                return@WebFilter chain.filter(exchange)
+            }
+
+            if (hasFileExtension(path)) {
+                return@WebFilter chain.filter(exchange)
+            }
+
+            serveIndexHtml(exchange)
         }
-
-        // 정적 파일 요청은 그냥 통과 (ResourceHandler가 처리)
-        if (hasFileExtension(path)) {
-            return@WebFilter chain.filter(exchange)
-        }
-
-        // SPA 라우트 요청 - index.html 반환
-        serveIndexHtml(exchange)
     }
 
     private fun hasFileExtension(path: String): Boolean {
