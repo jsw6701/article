@@ -19,6 +19,8 @@ class UserStore(private val database: Database) {
         Users.insert {
             it[username] = user.username
             it[password] = user.password
+            it[email] = user.email
+            it[emailVerified] = user.emailVerified
             it[gender] = user.gender.name
             it[ageGroup] = user.ageGroup.name
             it[role] = user.role.name
@@ -57,10 +59,22 @@ class UserStore(private val database: Database) {
             .any()
     }
 
+    /**
+     * 이메일(암호화된) 존재 여부 확인
+     */
+    fun existsByEmail(encryptedEmail: String): Boolean = transaction(database) {
+        Users.selectAll()
+            .where { Users.email eq encryptedEmail }
+            .limit(1)
+            .any()
+    }
+
     private fun ResultRow.toUser(): User = User(
         id = this[Users.id],
         username = this[Users.username],
         password = this[Users.password],
+        email = this[Users.email],
+        emailVerified = this[Users.emailVerified],
         gender = Gender.valueOf(this[Users.gender]),
         ageGroup = AgeGroup.valueOf(this[Users.ageGroup]),
         role = UserRole.valueOf(this[Users.role]),

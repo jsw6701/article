@@ -27,13 +27,12 @@ class SecurityConfig(
                 auth
                     // 정적 파일 및 프론트엔드 (인증 불필요)
                     .pathMatchers("/app/**").permitAll()
-                    // 인증 없이 접근 가능한 API 엔드포인트
+                    // 인증 관련 API (인증 불필요)
                     .pathMatchers("/api/auth/**").permitAll()
-                    .pathMatchers("/api/cards/**").permitAll()
-                    .pathMatchers("/api/trending/**").permitAll()
+                    // 헬스체크 및 문서 (인증 불필요)
                     .pathMatchers("/api/health").permitAll()
                     .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
-                    // 그 외 모든 요청은 인증 필요
+                    // 그 외 모든 API는 인증 필요
                     .anyExchange().authenticated()
             }
             .addFilterAt(jwtAuthenticationFilter, SecurityWebFiltersOrder.AUTHENTICATION)

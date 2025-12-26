@@ -9,6 +9,54 @@ class AuthController(
     private val authService: AuthService
 ) {
     /**
+     * 이메일 인증 코드 발송
+     */
+    @PostMapping("/email/send-verification")
+    fun sendEmailVerification(@RequestBody request: SendEmailVerificationRequest): ResponseEntity<SendEmailVerificationResponse> {
+        val result = authService.sendEmailVerification(request)
+        return if (result.success) {
+            ResponseEntity.ok(
+                SendEmailVerificationResponse(
+                    success = true,
+                    expireMinutes = result.expireMinutes,
+                    message = "인증 코드가 발송되었습니다."
+                )
+            )
+        } else {
+            ResponseEntity.badRequest().body(
+                SendEmailVerificationResponse(
+                    success = false,
+                    expireMinutes = null,
+                    message = result.error
+                )
+            )
+        }
+    }
+
+    /**
+     * 이메일 인증 코드 확인
+     */
+    @PostMapping("/email/verify")
+    fun verifyEmail(@RequestBody request: VerifyEmailRequest): ResponseEntity<VerifyEmailResponse> {
+        val result = authService.verifyEmail(request)
+        return if (result.success) {
+            ResponseEntity.ok(
+                VerifyEmailResponse(
+                    success = true,
+                    message = "이메일 인증이 완료되었습니다."
+                )
+            )
+        } else {
+            ResponseEntity.badRequest().body(
+                VerifyEmailResponse(
+                    success = false,
+                    message = result.error
+                )
+            )
+        }
+    }
+
+    /**
      * 회원가입
      */
     @PostMapping("/signup")
@@ -123,6 +171,17 @@ class AuthController(
 }
 
 // ========== API Response DTOs ==========
+
+data class SendEmailVerificationResponse(
+    val success: Boolean,
+    val expireMinutes: Int?,
+    val message: String?
+)
+
+data class VerifyEmailResponse(
+    val success: Boolean,
+    val message: String?
+)
 
 data class SignUpResponse(
     val success: Boolean,

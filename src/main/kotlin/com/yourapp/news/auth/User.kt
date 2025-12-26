@@ -9,11 +9,25 @@ data class User(
     val id: Long? = null,
     val username: String,
     val password: String,
+    val email: String,                                  // 암호화된 이메일
+    val emailVerified: Boolean = false,                 // 이메일 인증 여부
     val gender: Gender,
     val ageGroup: AgeGroup,
     val role: UserRole = UserRole.USER,
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()
+)
+
+/**
+ * 이메일 인증 코드
+ */
+data class EmailVerificationCode(
+    val id: Long? = null,
+    val email: String,                                  // 암호화된 이메일
+    val code: String,                                   // 인증 코드
+    val expiresAt: LocalDateTime,                       // 만료 시간
+    val verified: Boolean = false,                      // 인증 완료 여부
+    val createdAt: LocalDateTime = LocalDateTime.now()
 )
 
 /**

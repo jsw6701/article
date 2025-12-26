@@ -43,6 +43,9 @@ dependencies {
     // Password Encoding
     implementation("org.springframework.security:spring-security-crypto")
 
+    // Email
+    implementation("org.springframework.boot:spring-boot-starter-mail")
+
     // Swagger/OpenAPI - WebFlux용
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.8")
 

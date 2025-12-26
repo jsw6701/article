@@ -1,6 +1,7 @@
 package com.yourapp.news.auth
 
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import java.time.Instant
@@ -11,11 +12,79 @@ import java.time.ZoneId
 class AuthService(
     private val userStore: UserStore,
     private val refreshTokenStore: RefreshTokenStore,
+    private val emailVerificationStore: EmailVerificationStore,
+    private val emailService: EmailService,
+    private val emailEncryptor: EmailEncryptor,
     private val jwtTokenProvider: JwtTokenProvider,
     private val passwordEncoder: PasswordEncoder,
-    private val jwtProperties: JwtProperties
+    private val jwtProperties: JwtProperties,
+    @Value("\${email.verification.expire-minutes:10}") private val verificationExpireMinutes: Int
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
+
+    /**
+     * 이메일 인증 코드 발송
+     */
+    fun sendEmailVerification(request: SendEmailVerificationRequest): SendEmailVerificationResult {
+        // 1. 이메일 형식 검증
+        if (!isValidEmail(request.email)) {
+            return SendEmailVerificationResult.failure("유효하지 않은 이메일 형식입니다.")
+        }
+
+        // 2. 이메일 암호화 (검색용 해시)
+        val emailHash = emailEncryptor.hash(request.email)
+
+        // 3. 이미 등록된 이메일인지 확인
+        if (userStore.existsByEmail(emailHash)) {
+            return SendEmailVerificationResult.failure("이미 등록된 이메일입니다.")
+        }
+
+        // 4. 인증 코드 생성
+        val code = emailService.generateVerificationCode()
+
+        // 5. 인증 코드 저장 (암호화된 이메일 + 만료시간)
+        val expiresAt = LocalDateTime.now().plusMinutes(verificationExpireMinutes.toLong())
+        emailVerificationStore.save(emailHash, code, expiresAt)
+
+        // 6. 이메일 발송
+        val sent = emailService.sendVerificationEmail(request.email, code)
+        if (!sent) {
+            return SendEmailVerificationResult.failure("이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.")
+        }
+
+        log.info("Verification email sent: email={}", emailEncryptor.hash(request.email).take(10) + "...")
+
+        return SendEmailVerificationResult.success(verificationExpireMinutes)
+    }
+
+    /**
+     * 이메일 인증 코드 확인
+     */
+    fun verifyEmail(request: VerifyEmailRequest): VerifyEmailResult {
+        // 1. 이메일 해시
+        val emailHash = emailEncryptor.hash(request.email)
+
+        // 2. 인증 코드 조회
+        val verification = emailVerificationStore.findByEmailAndCode(emailHash, request.code)
+            ?: return VerifyEmailResult.failure("잘못된 인증 코드입니다.")
+
+        // 3. 만료 확인
+        if (verification.expiresAt.isBefore(LocalDateTime.now())) {
+            return VerifyEmailResult.failure("인증 코드가 만료되었습니다. 다시 발송해주세요.")
+        }
+
+        // 4. 이미 인증된 코드인지 확인
+        if (verification.verified) {
+            return VerifyEmailResult.success()
+        }
+
+        // 5. 인증 완료 처리
+        emailVerificationStore.markAsVerified(verification.id!!)
+
+        log.info("Email verified: emailHash={}", emailHash.take(10) + "...")
+
+        return VerifyEmailResult.success()
+    }
 
     /**
      * 회원가입
@@ -36,35 +105,65 @@ class AuthService(
             return SignUpResult.failure("비밀번호는 8자 이상이어야 합니다.")
         }
 
-        // 4. 성별 파싱
+        // 4. 이메일 검증
+        if (!isValidEmail(request.email)) {
+            return SignUpResult.failure("유효하지 않은 이메일 형식입니다.")
+        }
+
+        // 5. 이메일 해시
+        val emailHash = emailEncryptor.hash(request.email)
+
+        // 6. 이메일 인증 여부 확인
+        val verifiedEmail = emailVerificationStore.findVerifiedByEmail(emailHash)
+        if (verifiedEmail == null) {
+            return SignUpResult.failure("이메일 인증이 필요합니다.")
+        }
+
+        // 7. 이메일 중복 체크
+        if (userStore.existsByEmail(emailHash)) {
+            return SignUpResult.failure("이미 등록된 이메일입니다.")
+        }
+
+        // 8. 성별 파싱
         val gender = try {
             Gender.valueOf(request.gender.uppercase())
         } catch (e: Exception) {
             return SignUpResult.failure("유효하지 않은 성별입니다. (MALE 또는 FEMALE)")
         }
 
-        // 5. 나이대 파싱
+        // 9. 나이대 파싱
         val ageGroup = try {
             AgeGroup.valueOf(request.ageGroup.uppercase())
         } catch (e: Exception) {
             return SignUpResult.failure("유효하지 않은 나이대입니다.")
         }
 
-        // 6. 사용자 저장
+        // 10. 사용자 저장
         val encodedPassword = passwordEncoder.encode(request.password)
             ?: return SignUpResult.failure("비밀번호 암호화에 실패했습니다.")
 
         val user = User(
             username = request.username,
             password = encodedPassword,
+            email = emailHash,      // 해시된 이메일 저장
+            emailVerified = true,   // 인증 완료
             gender = gender,
             ageGroup = ageGroup
         )
 
         val userId = userStore.insert(user)
+
+        // 11. 인증 코드 삭제
+        emailVerificationStore.deleteByEmail(emailHash)
+
         log.info("New user registered: username={}, userId={}", request.username, userId)
 
         return SignUpResult.success(userId, request.username)
+    }
+
+    private fun isValidEmail(email: String): Boolean {
+        val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+        return email.matches(emailRegex) && email.length <= 255
     }
 
     /**
@@ -182,9 +281,42 @@ class AuthService(
 data class SignUpRequest(
     val username: String,
     val password: String,
+    val email: String,       // 이메일 (인증 완료된 이메일)
     val gender: String,      // MALE, FEMALE
     val ageGroup: String     // TEENS, TWENTIES, THIRTIES, FORTIES, FIFTIES, SIXTIES_PLUS
 )
+
+// ========== Email Verification DTOs ==========
+
+data class SendEmailVerificationRequest(
+    val email: String
+)
+
+data class SendEmailVerificationResult(
+    val success: Boolean,
+    val expireMinutes: Int?,
+    val error: String?
+) {
+    companion object {
+        fun success(expireMinutes: Int) = SendEmailVerificationResult(true, expireMinutes, null)
+        fun failure(error: String) = SendEmailVerificationResult(false, null, error)
+    }
+}
+
+data class VerifyEmailRequest(
+    val email: String,
+    val code: String
+)
+
+data class VerifyEmailResult(
+    val success: Boolean,
+    val error: String?
+) {
+    companion object {
+        fun success() = VerifyEmailResult(true, null)
+        fun failure(error: String) = VerifyEmailResult(false, error)
+    }
+}
 
 data class SignUpResult(
     val success: Boolean,

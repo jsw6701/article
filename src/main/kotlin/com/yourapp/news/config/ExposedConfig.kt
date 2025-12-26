@@ -1,6 +1,7 @@
 package com.yourapp.news.config
 
 import com.yourapp.news.article.Articles
+import com.yourapp.news.auth.EmailVerificationCodes
 import com.yourapp.news.auth.RefreshTokens
 import com.yourapp.news.auth.Users
 import com.yourapp.news.bookmark.Bookmarks
@@ -48,7 +49,8 @@ class ExposedConfig {
                 PipelineRuns,
                 Users,
                 RefreshTokens,
-                Bookmarks
+                Bookmarks,
+                EmailVerificationCodes
             )
         }
     }

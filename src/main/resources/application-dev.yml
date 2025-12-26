@@ -40,6 +40,31 @@ app:
       - "*"
     allow-credentials: true
 
+# 이메일 설정 (Gmail SMTP)
+spring.mail:
+  host: smtp.gmail.com
+  port: 587
+  username: ${MAIL_USERNAME}
+  password: ${MAIL_PASSWORD}
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
+          required: true
+        connectiontimeout: 5000
+        timeout: 5000
+        writetimeout: 5000
+
+# 이메일 암호화 키 (32자 이상)
+email:
+  encryption:
+    key: ${EMAIL_ENCRYPTION_KEY}
+  verification:
+    expire-minutes: 10
+    code-length: 6
+
 # 로깅
 logging:
   level:

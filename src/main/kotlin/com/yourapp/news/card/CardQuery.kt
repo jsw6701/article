@@ -34,16 +34,16 @@ class CardQuery(private val database: Database) {
         }
 
         filter.from?.let { from ->
-            condition = condition and (Issues.lastPublishedAt greaterEq from)
+            condition = condition and (Cards.createdAt greaterEq from)
         }
 
         filter.to?.let { to ->
-            condition = condition and (Issues.lastPublishedAt lessEq to)
+            condition = condition and (Cards.createdAt lessEq to)
         }
 
         joinedTable.selectAll()
             .where { condition }
-            .orderBy(Issues.lastPublishedAt, SortOrder.DESC)
+            .orderBy(Cards.createdAt, SortOrder.DESC)
             .limit(filter.limit)
             .offset(filter.offset.toLong())
             .map { row -> row.toCardListRow() }
@@ -71,9 +71,9 @@ class CardQuery(private val database: Database) {
         joinedTable.selectAll()
             .where {
                 (Cards.status eq CardStatus.ACTIVE.name) and
-                (Issues.lastPublishedAt greaterEq since)
+                (Cards.createdAt greaterEq since)
             }
-            .orderBy(Issues.lastPublishedAt, SortOrder.DESC)
+            .orderBy(Cards.createdAt, SortOrder.DESC)
             .limit(limit)
             .map { row -> row.toCardListRow() }
     }
@@ -89,6 +89,7 @@ class CardQuery(private val database: Database) {
         issueArticleCount = this[Issues.articleCount],
         issuePublisherCount = this[Issues.publisherCount],
         cardStatus = this[Cards.status],
+        cardCreatedAt = this[Cards.createdAt],
         cardUpdatedAt = this[Cards.updatedAt],
         cardContentJson = this[Cards.contentJson]
     )
@@ -133,7 +134,7 @@ class CardQuery(private val database: Database) {
 
         joinedTable.selectAll()
             .where { Cards.id inList cardIds }
-            .orderBy(Issues.lastPublishedAt, SortOrder.DESC)
+            .orderBy(Cards.createdAt, SortOrder.DESC)
             .map { row -> row.toCardListRow() }
     }
 
@@ -202,6 +203,7 @@ data class CardListRow(
     val issueArticleCount: Int,
     val issuePublisherCount: Int,
     val cardStatus: String,
+    val cardCreatedAt: LocalDateTime,
     val cardUpdatedAt: LocalDateTime,
     val cardContentJson: String
 )
