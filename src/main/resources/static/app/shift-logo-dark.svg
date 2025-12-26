@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 60">
+  <style>
+    .letter { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-weight: 800; font-style: italic; font-size: 48px; }
+    .accent { fill: #fb923c; }
+    .normal { fill: #ffffff; }
+  </style>
+  <g transform="skewX(-6)">
+    <text x="12" y="46" class="letter accent">S</text>
+    <text x="38" y="46" class="letter normal">H</text>
+    <text x="74" y="46" class="letter normal">I</text>
+    <text x="88" y="46" class="letter normal">F</text>
+    <text x="114" y="46" class="letter normal">T</text>
+  </g>
+</svg>
