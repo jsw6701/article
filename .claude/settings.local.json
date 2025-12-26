@@ -29,7 +29,8 @@
       "Bash(cmd /c \"C:\\ToyProject\\article\\gradlew.bat -p C:\\ToyProject\\article compileKotlin\")",
       "Bash(powershell -Command \"Set-Location -Path ''C:\\ToyProject\\article''; .\\gradlew.bat compileKotlin\")",
       "Bash(powershell -Command \"Set-Location -Path ''C:\\front\\news-briefing-frontend''; npm run build:static 2>&1\")",
-      "Bash(powershell -Command \"Set-Location -Path ''C:\\ToyProject\\article''; .\\gradlew.bat compileKotlin --console=plain\")"
+      "Bash(powershell -Command \"Set-Location -Path ''C:\\ToyProject\\article''; .\\gradlew.bat compileKotlin --console=plain\")",
+      "Bash(powershell -Command \"Remove-Item -Path ''C:\\ToyProject\\article\\src\\main\\resources\\static\\app'' -Recurse -Force -ErrorAction SilentlyContinue; Copy-Item -Path ''C:\\front\\news-briefing-frontend\\build\\*'' -Destination ''C:\\ToyProject\\article\\src\\main\\resources\\static\\app'' -Recurse -Force; Write-Host ''Done''\")"
     ],
     "deny": [],
     "ask": []
