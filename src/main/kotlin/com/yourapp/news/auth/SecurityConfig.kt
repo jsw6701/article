@@ -22,6 +22,8 @@ class SecurityConfig(
     fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
         return http
             .csrf { it.disable() }
+            .httpBasic { it.disable() }
+            .formLogin { it.disable() }
             .cors { it.configurationSource(corsConfigurationSource()) }
             .authorizeExchange { auth ->
                 auth
