@@ -1,6 +1,8 @@
 package com.yourapp.news.trending
 
 import com.yourapp.news.card.CardStore
+import com.yourapp.news.lifecycle.IssueLifecycleDto
+import com.yourapp.news.lifecycle.LifecycleService
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -8,7 +10,8 @@ import java.time.temporal.ChronoUnit
 @Service
 class TrendingService(
     private val trendingQuery: TrendingQuery,
-    private val cardStore: CardStore
+    private val cardStore: CardStore,
+    private val lifecycleService: LifecycleService
 ) {
     companion object {
         // 점수 가중치
@@ -42,7 +45,11 @@ class TrendingService(
             return emptyList()
         }
 
-        // 2. 각 이슈별 점수 계산 (현재 시각 기준)
+        // 2. 생애주기 일괄 조회
+        val issueIds = issueStats.map { it.issueId }
+        val lifecycles = lifecycleService.getLifecycles(issueIds)
+
+        // 3. 각 이슈별 점수 계산 (현재 시각 기준)
         val scoredIssues = issueStats.map { stat ->
             val score = calculateScore(
                 articleCount = stat.recentArticleCount,
@@ -53,6 +60,7 @@ class TrendingService(
 
             // 카드 결론 조회 (있으면)
             val conclusion = cardStore.findConclusionByIssueId(stat.issueId)
+            val lifecycle = lifecycles[stat.issueId]?.let { IssueLifecycleDto.from(it) }
 
             TrendingIssue(
                 issueId = stat.issueId,
@@ -64,11 +72,12 @@ class TrendingService(
                 publisherCount = stat.recentPublisherCount,
                 lastPublishedAt = stat.lastPublishedAt,
                 score = score,
-                conclusion = conclusion
+                conclusion = conclusion,
+                lifecycle = lifecycle
             )
         }
 
-        // 3. 점수순 정렬 후 limit 적용
+        // 4. 점수순 정렬 후 limit 적용
         return scoredIssues
             .sortedByDescending { it.score }
             .take(limit)
@@ -124,5 +133,6 @@ data class TrendingIssue(
     val publisherCount: Int,
     val lastPublishedAt: LocalDateTime,
     val score: Double,
-    val conclusion: String?  // 카드 결론 (있으면)
+    val conclusion: String?,  // 카드 결론 (있으면)
+    val lifecycle: IssueLifecycleDto? = null // 이슈 생애주기
 )

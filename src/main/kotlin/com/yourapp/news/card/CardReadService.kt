@@ -1,6 +1,8 @@
 package com.yourapp.news.card
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.yourapp.news.lifecycle.IssueLifecycleDto
+import com.yourapp.news.lifecycle.LifecycleService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.time.LocalDateTime
@@ -9,7 +11,8 @@ import java.time.LocalDateTime
 class CardReadService(
     private val cardQuery: CardQuery,
     private val cardStore: CardStore,
-    private val cardViewStore: CardViewStore
+    private val cardViewStore: CardViewStore,
+    private val lifecycleService: LifecycleService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val objectMapper = jacksonObjectMapper()
@@ -22,10 +25,15 @@ class CardReadService(
         val cardIds = rows.mapNotNull { cardStore.findByIssueId(it.issueId)?.id }
         val viewCounts = cardViewStore.getViewCounts(cardIds)
 
+        // 생애주기 일괄 조회
+        val issueIds = rows.map { it.issueId }
+        val lifecycles = lifecycleService.getLifecycles(issueIds)
+
         return rows.map { row ->
             val (cardJson, conclusion) = parseContentJson(row.cardContentJson)
             val cardId = cardStore.findByIssueId(row.issueId)?.id
             val viewCount = cardId?.let { viewCounts[it] } ?: 0L
+            val lifecycle = lifecycles[row.issueId]?.let { IssueLifecycleDto.from(it) }
 
             CardListItem(
                 issueId = row.issueId,
@@ -42,7 +50,8 @@ class CardReadService(
                 cardUpdatedAt = row.cardUpdatedAt,
                 conclusion = conclusion,
                 cardJson = cardJson,
-                viewCount = viewCount
+                viewCount = viewCount,
+                lifecycle = lifecycle
             )
         }
     }
@@ -68,6 +77,9 @@ class CardReadService(
         val cardId = cardStore.findByIssueId(issueId)?.id
         val viewCount = cardId?.let { cardViewStore.getViewCount(it) } ?: 0L
 
+        // 생애주기 조회
+        val lifecycle = lifecycleService.getLifecycle(issueId)?.let { IssueLifecycleDto.from(it) }
+
         return CardDetail(
             issueId = row.issueId,
             issueFingerprint = row.issueFingerprint,
@@ -85,7 +97,8 @@ class CardReadService(
             cardUpdatedAt = row.cardUpdatedAt,
             cardJson = row.cardContentJson,
             articles = articles,
-            viewCount = viewCount
+            viewCount = viewCount,
+            lifecycle = lifecycle
         )
     }
 
@@ -97,10 +110,15 @@ class CardReadService(
         val cardIds = rows.mapNotNull { cardStore.findByIssueId(it.issueId)?.id }
         val viewCounts = cardViewStore.getViewCounts(cardIds)
 
+        // 생애주기 일괄 조회
+        val issueIds = rows.map { it.issueId }
+        val lifecycles = lifecycleService.getLifecycles(issueIds)
+
         return rows.map { row ->
             val (cardJson, conclusion) = parseContentJson(row.cardContentJson)
             val cardId = cardStore.findByIssueId(row.issueId)?.id
             val viewCount = cardId?.let { viewCounts[it] } ?: 0L
+            val lifecycle = lifecycles[row.issueId]?.let { IssueLifecycleDto.from(it) }
 
             CardListItem(
                 issueId = row.issueId,
@@ -117,7 +135,8 @@ class CardReadService(
                 cardUpdatedAt = row.cardUpdatedAt,
                 conclusion = conclusion,
                 cardJson = cardJson,
-                viewCount = viewCount
+                viewCount = viewCount,
+                lifecycle = lifecycle
             )
         }
     }
@@ -136,6 +155,7 @@ class CardReadService(
         val row = cardQuery.getCardByCardId(cardId) ?: return null
         val (cardJson, conclusion) = parseContentJson(row.cardContentJson)
         val viewCount = cardViewStore.getViewCount(cardId)
+        val lifecycle = lifecycleService.getLifecycle(row.issueId)?.let { IssueLifecycleDto.from(it) }
 
         return CardListItem(
             issueId = row.issueId,
@@ -152,7 +172,8 @@ class CardReadService(
             cardUpdatedAt = row.cardUpdatedAt,
             conclusion = conclusion,
             cardJson = cardJson,
-            viewCount = viewCount
+            viewCount = viewCount,
+            lifecycle = lifecycle
         )
     }
 
@@ -186,7 +207,8 @@ data class CardListItem(
     val cardUpdatedAt: LocalDateTime,
     val conclusion: String?,
     val cardJson: String?,
-    val viewCount: Long = 0
+    val viewCount: Long = 0,
+    val lifecycle: IssueLifecycleDto? = null // 이슈 생애주기
 )
 
 /**
@@ -209,7 +231,8 @@ data class CardDetail(
     val cardUpdatedAt: LocalDateTime,
     val cardJson: String?,
     val articles: List<ArticleSummary> = emptyList(),
-    val viewCount: Long = 0
+    val viewCount: Long = 0,
+    val lifecycle: IssueLifecycleDto? = null // 이슈 생애주기
 )
 
 /**

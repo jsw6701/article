@@ -10,6 +10,8 @@ import com.yourapp.news.card.Cards
 import com.yourapp.news.card.CardViews
 import com.yourapp.news.issue.IssueArticles
 import com.yourapp.news.issue.Issues
+import com.yourapp.news.lifecycle.IssueArticleHistories
+import com.yourapp.news.lifecycle.IssueLifecycles
 import com.yourapp.news.pipeline.PipelineRuns
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -50,7 +52,9 @@ class ExposedConfig {
                 Users,
                 RefreshTokens,
                 Bookmarks,
-                EmailVerificationCodes
+                EmailVerificationCodes,
+                IssueLifecycles,
+                IssueArticleHistories
             )
         }
     }
