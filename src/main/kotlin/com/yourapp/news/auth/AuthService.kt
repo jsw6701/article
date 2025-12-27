@@ -214,7 +214,8 @@ class AuthService(
             accessToken = accessToken,
             refreshToken = refreshToken,
             userId = user.id,
-            username = user.username
+            username = user.username,
+            role = user.role
         )
     }
 
@@ -346,12 +347,13 @@ data class LoginResult(
     val refreshToken: String?,
     val userId: Long?,
     val username: String?,
+    val role: UserRole?,
     val error: String?
 ) {
     companion object {
-        fun success(accessToken: String, refreshToken: String, userId: Long, username: String) =
-            LoginResult(true, accessToken, refreshToken, userId, username, null)
-        fun failure(error: String) = LoginResult(false, null, null, null, null, error)
+        fun success(accessToken: String, refreshToken: String, userId: Long, username: String, role: UserRole) =
+            LoginResult(true, accessToken, refreshToken, userId, username, role, null)
+        fun failure(error: String) = LoginResult(false, null, null, null, null, null, error)
     }
 }
 

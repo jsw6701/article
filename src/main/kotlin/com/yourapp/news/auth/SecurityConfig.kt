@@ -34,6 +34,8 @@ class SecurityConfig(
                     // 헬스체크 및 문서 (인증 불필요)
                     .pathMatchers("/api/health").permitAll()
                     .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
+                    // 관리자 전용 API (ADMIN 역할 필요)
+                    .pathMatchers("/api/admin/**").hasRole("ADMIN")
                     // 그 외 모든 API는 인증 필요
                     .anyExchange().authenticated()
             }

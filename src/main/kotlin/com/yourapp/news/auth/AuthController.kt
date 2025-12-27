@@ -111,6 +111,7 @@ class AuthController(
                     refreshToken = result.refreshToken,
                     userId = result.userId,
                     username = result.username,
+                    role = result.role?.name,
                     message = "로그인 성공"
                 )
             )
@@ -122,6 +123,7 @@ class AuthController(
                     refreshToken = null,
                     userId = null,
                     username = null,
+                    role = null,
                     message = result.error
                 )
             )
@@ -201,6 +203,7 @@ data class LoginResponse(
     val refreshToken: String?,
     val userId: Long?,
     val username: String?,
+    val role: String?,
     val message: String?
 )
 
