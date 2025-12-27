@@ -185,8 +185,36 @@ class AdminStore(private val database: Database) {
         Users.deleteWhere { Users.id eq userId } > 0
     }
 
+    /**
+     * 사용자 등급 변경
+     */
+    fun updateUserGrade(userId: Long, grade: UserGrade): Boolean = transaction(database) {
+        Users.update({ Users.id eq userId }) {
+            it[Users.grade] = grade.name
+            it[updatedAt] = LocalDateTime.now()
+        } > 0
+    }
+
+    /**
+     * 등급별 사용자 통계
+     */
+    fun getGradeStats(): List<GradeStats> = transaction(database) {
+        UserGrade.entries.map { grade ->
+            val count = Users.selectAll()
+                .where { Users.grade eq grade.name }
+                .count()
+            GradeStats(
+                grade = grade.name,
+                displayName = grade.displayName,
+                level = grade.level,
+                count = count
+            )
+        }
+    }
+
     private fun ResultRow.toUserListItem(): UserListItem {
         val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
+        val gradeEnum = UserGrade.valueOf(this[Users.grade])
         return UserListItem(
             id = this[Users.id],
             username = this[Users.username],
@@ -194,6 +222,9 @@ class AdminStore(private val database: Database) {
             gender = Gender.valueOf(this[Users.gender]).displayName,
             ageGroup = AgeGroup.valueOf(this[Users.ageGroup]).displayName,
             role = this[Users.role],
+            grade = gradeEnum.name,
+            gradeDisplayName = gradeEnum.displayName,
+            gradeLevel = gradeEnum.level,
             emailVerified = this[Users.emailVerified],
             createdAt = this[Users.createdAt].format(formatter)
         )

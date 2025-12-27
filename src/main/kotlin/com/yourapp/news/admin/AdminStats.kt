@@ -48,6 +48,16 @@ data class AgeGroupStats(
 )
 
 /**
+ * 회원 등급별 통계
+ */
+data class GradeStats(
+    val grade: String,
+    val displayName: String,
+    val level: Int,
+    val count: Long
+)
+
+/**
  * 사용자 목록 응답
  */
 data class UserListItem(
@@ -57,6 +67,9 @@ data class UserListItem(
     val gender: String,
     val ageGroup: String,
     val role: String,
+    val grade: String,
+    val gradeDisplayName: String,
+    val gradeLevel: Int,
     val emailVerified: Boolean,
     val createdAt: String
 )

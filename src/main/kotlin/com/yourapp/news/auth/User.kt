@@ -14,6 +14,7 @@ data class User(
     val gender: Gender,
     val ageGroup: AgeGroup,
     val role: UserRole = UserRole.USER,
+    val grade: UserGrade = UserGrade.BRONZE,            // 회원 등급
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()
 )
@@ -56,4 +57,15 @@ enum class AgeGroup(val displayName: String, val range: String) {
 enum class UserRole {
     USER,
     ADMIN
+}
+
+/**
+ * 회원 등급
+ */
+enum class UserGrade(val displayName: String, val level: Int, val description: String) {
+    BRONZE("브론즈", 1, "일반 회원"),
+    SILVER("실버", 2, "활동 회원"),
+    GOLD("골드", 3, "우수 회원"),
+    PLATINUM("플래티넘", 4, "VIP 회원"),
+    DIAMOND("다이아몬드", 5, "최우수 회원")
 }

@@ -15,6 +15,7 @@ object Users : Table("users") {
     val gender = varchar("gender", 10)
     val ageGroup = varchar("age_group", 20)
     val role = varchar("role", 20).default(UserRole.USER.name)
+    val grade = varchar("grade", 20).default(UserGrade.BRONZE.name)  // 회원 등급
     val createdAt = datetime("created_at")
     val updatedAt = datetime("updated_at")
 

@@ -24,6 +24,7 @@ class UserStore(private val database: Database) {
             it[gender] = user.gender.name
             it[ageGroup] = user.ageGroup.name
             it[role] = user.role.name
+            it[grade] = user.grade.name
             it[createdAt] = LocalDateTime.now()
             it[updatedAt] = LocalDateTime.now()
         } get Users.id
@@ -78,6 +79,7 @@ class UserStore(private val database: Database) {
         gender = Gender.valueOf(this[Users.gender]),
         ageGroup = AgeGroup.valueOf(this[Users.ageGroup]),
         role = UserRole.valueOf(this[Users.role]),
+        grade = UserGrade.valueOf(this[Users.grade]),
         createdAt = this[Users.createdAt],
         updatedAt = this[Users.updatedAt]
     )
