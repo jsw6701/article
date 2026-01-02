@@ -10,7 +10,8 @@ object Users : Table("users") {
     val id = long("id").autoIncrement()
     val username = varchar("username", 50).uniqueIndex()
     val password = varchar("password", 255)
-    val email = varchar("email", 255).uniqueIndex()           // 암호화된 이메일
+    val email = varchar("email", 512)                          // 암호화된 이메일 (복호화 가능)
+    val emailHash = varchar("email_hash", 255).uniqueIndex()   // 이메일 해시 (검색용)
     val emailVerified = bool("email_verified").default(false)  // 이메일 인증 여부
     val gender = varchar("gender", 10)
     val ageGroup = varchar("age_group", 20)
@@ -45,6 +46,21 @@ object RefreshTokens : Table("refresh_tokens") {
     val token = varchar("token", 512).uniqueIndex()
     val expiresAt = datetime("expires_at")
     val createdAt = datetime("created_at")
+
+    override val primaryKey = PrimaryKey(id)
+}
+
+/**
+ * 사용자 설정 테이블
+ */
+object UserSettingsTable : Table("user_settings") {
+    val id = long("id").autoIncrement()
+    val userId = long("user_id").references(Users.id).uniqueIndex()
+    val theme = varchar("theme", 20).default(Theme.DARK.name)
+    val fontSize = varchar("font_size", 20).default(FontSize.MEDIUM.name)
+    val startPage = varchar("start_page", 20).default(StartPage.HOME.name)
+    val createdAt = datetime("created_at")
+    val updatedAt = datetime("updated_at")
 
     override val primaryKey = PrimaryKey(id)
 }

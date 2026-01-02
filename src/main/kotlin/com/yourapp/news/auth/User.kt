@@ -9,7 +9,8 @@ data class User(
     val id: Long? = null,
     val username: String,
     val password: String,
-    val email: String,                                  // 암호화된 이메일
+    val email: String,                                  // 암호화된 이메일 (복호화 가능)
+    val emailHash: String = "",                         // 이메일 해시 (검색용, 단방향)
     val emailVerified: Boolean = false,                 // 이메일 인증 여부
     val gender: Gender,
     val ageGroup: AgeGroup,

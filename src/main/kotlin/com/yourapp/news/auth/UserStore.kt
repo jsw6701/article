@@ -3,6 +3,7 @@ package com.yourapp.news.auth
 import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.eq
 import org.jetbrains.exposed.v1.jdbc.Database
+import org.jetbrains.exposed.v1.jdbc.deleteWhere
 import org.jetbrains.exposed.v1.jdbc.insert
 import org.jetbrains.exposed.v1.jdbc.selectAll
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -20,6 +21,7 @@ class UserStore(private val database: Database) {
             it[username] = user.username
             it[password] = user.password
             it[email] = user.email
+            it[emailHash] = user.emailHash
             it[emailVerified] = user.emailVerified
             it[gender] = user.gender.name
             it[ageGroup] = user.ageGroup.name
@@ -61,13 +63,21 @@ class UserStore(private val database: Database) {
     }
 
     /**
-     * 이메일(암호화된) 존재 여부 확인
+     * 이메일 해시로 존재 여부 확인
      */
-    fun existsByEmail(encryptedEmail: String): Boolean = transaction(database) {
+    fun existsByEmail(emailHash: String): Boolean = transaction(database) {
         Users.selectAll()
-            .where { Users.email eq encryptedEmail }
+            .where { Users.emailHash eq emailHash }
             .limit(1)
             .any()
+    }
+
+    /**
+     * 사용자 삭제
+     */
+    fun deleteById(id: Long): Boolean = transaction(database) {
+        val deleted = Users.deleteWhere { Users.id eq id }
+        deleted > 0
     }
 
     private fun ResultRow.toUser(): User = User(
@@ -75,6 +85,7 @@ class UserStore(private val database: Database) {
         username = this[Users.username],
         password = this[Users.password],
         email = this[Users.email],
+        emailHash = this[Users.emailHash],
         emailVerified = this[Users.emailVerified],
         gender = Gender.valueOf(this[Users.gender]),
         ageGroup = AgeGroup.valueOf(this[Users.ageGroup]),

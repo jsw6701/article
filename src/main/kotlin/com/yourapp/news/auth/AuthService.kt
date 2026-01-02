@@ -142,11 +142,15 @@ class AuthService(
         val encodedPassword = passwordEncoder.encode(request.password)
             ?: return SignUpResult.failure("비밀번호 암호화에 실패했습니다.")
 
+        // 이메일 암호화 (복호화 가능)
+        val encryptedEmail = emailEncryptor.encrypt(request.email)
+
         val user = User(
             username = request.username,
             password = encodedPassword,
-            email = emailHash,      // 해시된 이메일 저장
-            emailVerified = true,   // 인증 완료
+            email = encryptedEmail,  // 암호화된 이메일 저장 (복호화 가능)
+            emailHash = emailHash,   // 해시는 검색용으로 별도 저장
+            emailVerified = true,    // 인증 완료
             gender = gender,
             ageGroup = ageGroup
         )
