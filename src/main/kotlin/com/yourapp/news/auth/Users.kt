@@ -17,6 +17,8 @@ object Users : Table("users") {
     val ageGroup = varchar("age_group", 20)
     val role = varchar("role", 20).default(UserRole.USER.name)
     val grade = varchar("grade", 20).default(UserGrade.BRONZE.name)  // 회원 등급
+    val termsAgreedAt = datetime("terms_agreed_at").nullable()       // 이용약관 동의 일시
+    val privacyAgreedAt = datetime("privacy_agreed_at").nullable()   // 개인정보처리방침 동의 일시
     val createdAt = datetime("created_at")
     val updatedAt = datetime("updated_at")
 

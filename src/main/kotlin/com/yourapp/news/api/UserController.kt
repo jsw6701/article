@@ -142,6 +142,128 @@ class UserController(
     }
 
     /**
+     * 비밀번호 변경
+     */
+    @PutMapping("/me/password")
+    fun changePassword(
+        authentication: Authentication,
+        @RequestBody request: ChangePasswordRequest
+    ): ResponseEntity<ChangePasswordResponse> {
+        val principal = authentication.principal as? UserPrincipal
+            ?: return ResponseEntity.status(401).body(
+                ChangePasswordResponse(success = false, message = "인증 정보가 유효하지 않습니다.")
+            )
+        val userId = principal.userId
+
+        val user = userStore.findById(userId)
+            ?: return ResponseEntity.status(404).body(
+                ChangePasswordResponse(success = false, message = "사용자를 찾을 수 없습니다.")
+            )
+
+        // 현재 비밀번호 확인
+        if (!passwordEncoder.matches(request.currentPassword, user.password)) {
+            return ResponseEntity.badRequest().body(
+                ChangePasswordResponse(success = false, message = "현재 비밀번호가 일치하지 않습니다.")
+            )
+        }
+
+        // 새 비밀번호 유효성 검사 (8자 이상, 숫자 포함, 특수문자 포함)
+        val passwordValidation = validatePassword(request.newPassword)
+        if (!passwordValidation.isValid) {
+            return ResponseEntity.badRequest().body(
+                ChangePasswordResponse(success = false, message = passwordValidation.message)
+            )
+        }
+
+        // 새 비밀번호가 현재 비밀번호와 같은지 확인
+        if (passwordEncoder.matches(request.newPassword, user.password)) {
+            return ResponseEntity.badRequest().body(
+                ChangePasswordResponse(success = false, message = "새 비밀번호는 현재 비밀번호와 달라야 합니다.")
+            )
+        }
+
+        // 비밀번호 변경
+        val encodedPassword = passwordEncoder.encode(request.newPassword)!!
+        val updated = userStore.updatePassword(userId, encodedPassword)
+
+        if (updated) {
+            log.info("Password changed for user: userId={}", userId)
+            return ResponseEntity.ok(
+                ChangePasswordResponse(success = true, message = "비밀번호가 변경되었습니다.")
+            )
+        } else {
+            return ResponseEntity.status(500).body(
+                ChangePasswordResponse(success = false, message = "비밀번호 변경 중 오류가 발생했습니다.")
+            )
+        }
+    }
+
+    /**
+     * 프로필 수정
+     */
+    @PutMapping("/me/profile")
+    fun updateProfile(
+        authentication: Authentication,
+        @RequestBody request: UpdateProfileRequest
+    ): ResponseEntity<UpdateProfileResponse> {
+        val principal = authentication.principal as? UserPrincipal
+            ?: return ResponseEntity.status(401).body(
+                UpdateProfileResponse(success = false, message = "인증 정보가 유효하지 않습니다.")
+            )
+        val userId = principal.userId
+
+        val user = userStore.findById(userId)
+            ?: return ResponseEntity.status(404).body(
+                UpdateProfileResponse(success = false, message = "사용자를 찾을 수 없습니다.")
+            )
+
+        // 성별 파싱
+        val gender = try {
+            Gender.valueOf(request.gender.uppercase())
+        } catch (e: Exception) {
+            return ResponseEntity.badRequest().body(
+                UpdateProfileResponse(success = false, message = "유효하지 않은 성별입니다.")
+            )
+        }
+
+        // 연령대 파싱
+        val ageGroup = try {
+            AgeGroup.valueOf(request.ageGroup.uppercase())
+        } catch (e: Exception) {
+            return ResponseEntity.badRequest().body(
+                UpdateProfileResponse(success = false, message = "유효하지 않은 연령대입니다.")
+            )
+        }
+
+        // 프로필 업데이트
+        val updated = userStore.updateProfile(userId, gender, ageGroup)
+
+        if (updated) {
+            log.info("Profile updated for user: userId={}, gender={}, ageGroup={}", userId, gender, ageGroup)
+            return ResponseEntity.ok(
+                UpdateProfileResponse(success = true, message = "프로필이 수정되었습니다.")
+            )
+        } else {
+            return ResponseEntity.status(500).body(
+                UpdateProfileResponse(success = false, message = "프로필 수정 중 오류가 발생했습니다.")
+            )
+        }
+    }
+
+    private fun validatePassword(password: String): PasswordValidationResult {
+        if (password.length < 8) {
+            return PasswordValidationResult(false, "비밀번호는 8자 이상이어야 합니다.")
+        }
+        if (!password.any { it.isDigit() }) {
+            return PasswordValidationResult(false, "비밀번호에 숫자가 포함되어야 합니다.")
+        }
+        if (!password.any { !it.isLetterOrDigit() }) {
+            return PasswordValidationResult(false, "비밀번호에 특수문자가 포함되어야 합니다.")
+        }
+        return PasswordValidationResult(true, "")
+    }
+
+    /**
      * 회원 탈퇴
      */
     @DeleteMapping("/me")
@@ -230,6 +352,31 @@ data class DeleteAccountRequest(
 
 data class DeleteAccountResponse(
     val success: Boolean,
+    val message: String
+)
+
+data class ChangePasswordRequest(
+    val currentPassword: String,
+    val newPassword: String
+)
+
+data class ChangePasswordResponse(
+    val success: Boolean,
+    val message: String
+)
+
+data class UpdateProfileRequest(
+    val gender: String,
+    val ageGroup: String
+)
+
+data class UpdateProfileResponse(
+    val success: Boolean,
+    val message: String
+)
+
+data class PasswordValidationResult(
+    val isValid: Boolean,
     val message: String
 )
 

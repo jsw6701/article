@@ -101,6 +101,67 @@ class EmailService(
     }
 
     /**
+     * 비밀번호 재설정 이메일 발송
+     */
+    fun sendPasswordResetEmail(email: String, code: String): Boolean {
+        return try {
+            val message = mailSender.createMimeMessage()
+            val helper = MimeMessageHelper(message, true, "UTF-8")
+
+            helper.setTo(email)
+            helper.setSubject("[SHIFT] 비밀번호 재설정 코드")
+            helper.setText(buildPasswordResetEmailContent(code), true)
+
+            mailSender.send(message)
+            log.info("Password reset email sent to: ${maskEmail(email)}")
+            true
+        } catch (e: Exception) {
+            log.error("Failed to send password reset email to: ${maskEmail(email)}", e)
+            false
+        }
+    }
+
+    /**
+     * 비밀번호 재설정 이메일 본문 HTML 생성
+     */
+    private fun buildPasswordResetEmailContent(code: String): String {
+        return """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: 'Noto Sans KR', sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }
+                    .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                    h1 { color: #333; margin-bottom: 20px; }
+                    .code { font-size: 32px; font-weight: bold; color: #3b82f6; letter-spacing: 8px; padding: 20px; background: #f0f7ff; border-radius: 8px; text-align: center; margin: 30px 0; }
+                    .info { color: #666; font-size: 14px; line-height: 1.6; }
+                    .warning { color: #dc2626; font-size: 13px; margin-top: 20px; padding: 15px; background: #fef2f2; border-radius: 8px; }
+                    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; color: #999; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>비밀번호 재설정</h1>
+                    <p class="info">비밀번호 재설정을 요청하셨습니다.<br>아래 인증 코드를 입력하여 새 비밀번호를 설정해 주세요.</p>
+                    <div class="code">$code</div>
+                    <p class="info">
+                        이 코드는 <strong>${expireMinutes}분</strong> 동안 유효합니다.
+                    </p>
+                    <div class="warning">
+                        ⚠️ 본인이 요청하지 않았다면 이 이메일을 무시하고, 계정 보안을 위해 비밀번호를 변경해 주세요.
+                    </div>
+                    <div class="footer">
+                        SHIFT - 뉴스 브리핑 서비스<br>
+                        문의: shift.context@gmail.com
+                    </div>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
+    }
+
+    /**
      * 인증 코드 만료 시간 (분) 반환
      */
     fun getExpireMinutes(): Int = expireMinutes

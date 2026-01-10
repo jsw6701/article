@@ -112,6 +112,7 @@ class AuthController(
                     userId = result.userId,
                     username = result.username,
                     role = result.role?.name,
+                    requiresTermsAgreement = result.requiresTermsAgreement,
                     message = "로그인 성공"
                 )
             )
@@ -124,6 +125,7 @@ class AuthController(
                     userId = null,
                     username = null,
                     role = null,
+                    requiresTermsAgreement = null,
                     message = result.error
                 )
             )
@@ -170,6 +172,102 @@ class AuthController(
             )
         )
     }
+
+    /**
+     * 아이디 찾기
+     */
+    @PostMapping("/find-username")
+    fun findUsername(@RequestBody request: FindUsernameRequest): ResponseEntity<FindUsernameResponse> {
+        val result = authService.findUsername(request)
+        return if (result.success) {
+            ResponseEntity.ok(
+                FindUsernameResponse(
+                    success = true,
+                    username = result.username,
+                    message = "아이디를 찾았습니다."
+                )
+            )
+        } else {
+            ResponseEntity.badRequest().body(
+                FindUsernameResponse(
+                    success = false,
+                    username = null,
+                    message = result.error
+                )
+            )
+        }
+    }
+
+    /**
+     * 약관 동의 처리
+     */
+    @PostMapping("/terms/agree")
+    fun agreeToTerms(@RequestBody request: TermsAgreementRequest): ResponseEntity<TermsAgreementResponse> {
+        val result = authService.agreeToTerms(request.userId)
+        return if (result) {
+            ResponseEntity.ok(
+                TermsAgreementResponse(
+                    success = true,
+                    message = "약관 동의가 완료되었습니다."
+                )
+            )
+        } else {
+            ResponseEntity.badRequest().body(
+                TermsAgreementResponse(
+                    success = false,
+                    message = "약관 동의 처리에 실패했습니다."
+                )
+            )
+        }
+    }
+
+    /**
+     * 비밀번호 재설정 이메일 발송
+     */
+    @PostMapping("/password/send-reset")
+    fun sendPasswordResetEmail(@RequestBody request: PasswordResetEmailRequest): ResponseEntity<PasswordResetEmailResponse> {
+        val result = authService.sendPasswordResetEmail(request.email)
+        return if (result.success) {
+            ResponseEntity.ok(
+                PasswordResetEmailResponse(
+                    success = true,
+                    expireMinutes = result.expireMinutes,
+                    message = "비밀번호 재설정 코드가 발송되었습니다."
+                )
+            )
+        } else {
+            ResponseEntity.badRequest().body(
+                PasswordResetEmailResponse(
+                    success = false,
+                    expireMinutes = null,
+                    message = result.error
+                )
+            )
+        }
+    }
+
+    /**
+     * 비밀번호 재설정
+     */
+    @PostMapping("/password/reset")
+    fun resetPassword(@RequestBody request: ResetPasswordRequest): ResponseEntity<ResetPasswordResponse> {
+        val result = authService.resetPassword(request)
+        return if (result.success) {
+            ResponseEntity.ok(
+                ResetPasswordResponse(
+                    success = true,
+                    message = "비밀번호가 성공적으로 변경되었습니다."
+                )
+            )
+        } else {
+            ResponseEntity.badRequest().body(
+                ResetPasswordResponse(
+                    success = false,
+                    message = result.error
+                )
+            )
+        }
+    }
 }
 
 // ========== API Response DTOs ==========
@@ -204,6 +302,7 @@ data class LoginResponse(
     val userId: Long?,
     val username: String?,
     val role: String?,
+    val requiresTermsAgreement: Boolean?,
     val message: String?
 )
 
@@ -225,4 +324,40 @@ data class LogoutRequest(
 data class LogoutResponse(
     val success: Boolean,
     val message: String
+)
+
+data class FindUsernameResponse(
+    val success: Boolean,
+    val username: String?,
+    val message: String?
+)
+
+data class TermsAgreementRequest(
+    val userId: Long
+)
+
+data class TermsAgreementResponse(
+    val success: Boolean,
+    val message: String
+)
+
+data class PasswordResetEmailRequest(
+    val email: String
+)
+
+data class PasswordResetEmailResponse(
+    val success: Boolean,
+    val expireMinutes: Int?,
+    val message: String?
+)
+
+data class ResetPasswordRequest(
+    val email: String,
+    val code: String,
+    val newPassword: String
+)
+
+data class ResetPasswordResponse(
+    val success: Boolean,
+    val message: String?
 )

@@ -36,10 +36,12 @@ class JwtTokenProvider(
 
     /**
      * Refresh Token 생성
+     * @param userId 사용자 ID
+     * @param expireMs 만료 시간 (밀리초). null이면 기본값 사용
      */
-    fun createRefreshToken(userId: Long): String {
+    fun createRefreshToken(userId: Long, expireMs: Long? = null): String {
         val now = Date()
-        val expiry = Date(now.time + jwtProperties.refreshTokenExpireMs)
+        val expiry = Date(now.time + (expireMs ?: jwtProperties.refreshTokenExpireMs))
 
         return Jwts.builder()
             .subject(userId.toString())

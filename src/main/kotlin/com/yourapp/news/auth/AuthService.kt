@@ -205,22 +205,37 @@ class AuthService(
         val accessToken = jwtTokenProvider.createAccessToken(user.id!!, user.username, user.role)
 
         // 4. Refresh Token 생성 및 저장
-        val refreshToken = jwtTokenProvider.createRefreshToken(user.id)
+        // rememberMe가 true이면 30일, 아니면 기본 7일
+        val refreshTokenExpireMs = if (request.rememberMe) {
+            REMEMBER_ME_REFRESH_TOKEN_EXPIRE_MS
+        } else {
+            jwtProperties.refreshTokenExpireMs
+        }
+        val refreshToken = jwtTokenProvider.createRefreshToken(user.id, refreshTokenExpireMs)
         val refreshTokenExpiry = LocalDateTime.ofInstant(
-            Instant.ofEpochMilli(System.currentTimeMillis() + jwtProperties.refreshTokenExpireMs),
+            Instant.ofEpochMilli(System.currentTimeMillis() + refreshTokenExpireMs),
             ZoneId.systemDefault()
         )
         refreshTokenStore.save(user.id, refreshToken, refreshTokenExpiry)
 
-        log.info("User logged in: username={}", user.username)
+        log.info("User logged in: username={}, rememberMe={}", user.username, request.rememberMe)
+
+        // 약관 동의 여부 확인
+        val requiresTermsAgreement = user.termsAgreedAt == null || user.privacyAgreedAt == null
 
         return LoginResult.success(
             accessToken = accessToken,
             refreshToken = refreshToken,
             userId = user.id,
             username = user.username,
-            role = user.role
+            role = user.role,
+            requiresTermsAgreement = requiresTermsAgreement
         )
+    }
+
+    companion object {
+        // 자동 로그인 시 Refresh Token 만료 시간: 30일
+        const val REMEMBER_ME_REFRESH_TOKEN_EXPIRE_MS = 30L * 24 * 60 * 60 * 1000
     }
 
     /**
@@ -274,6 +289,123 @@ class AuthService(
         val deleted = refreshTokenStore.deleteAllByUserId(userId)
         log.info("User logged out: userId={}, deletedTokens={}", userId, deleted)
         return deleted > 0
+    }
+
+    /**
+     * 약관 동의 처리
+     */
+    fun agreeToTerms(userId: Long): Boolean {
+        val user = userStore.findById(userId) ?: return false
+        val result = userStore.updateTermsAgreement(userId)
+        if (result) {
+            log.info("User agreed to terms: userId={}", userId)
+        }
+        return result
+    }
+
+    /**
+     * 아이디 찾기
+     */
+    fun findUsername(request: FindUsernameRequest): FindUsernameResult {
+        // 1. 이메일 해시
+        val emailHash = emailEncryptor.hash(request.email)
+
+        // 2. 인증 코드 조회
+        val verification = emailVerificationStore.findByEmailAndCode(emailHash, request.code)
+            ?: return FindUsernameResult.failure("잘못된 인증 코드입니다.")
+
+        // 3. 만료 확인
+        if (verification.expiresAt.isBefore(LocalDateTime.now())) {
+            return FindUsernameResult.failure("인증 코드가 만료되었습니다. 다시 발송해주세요.")
+        }
+
+        // 4. 사용자 조회
+        val user = userStore.findByEmailHash(emailHash)
+            ?: return FindUsernameResult.failure("등록된 이메일이 없습니다.")
+
+        // 5. 인증 코드 삭제
+        emailVerificationStore.deleteByEmail(emailHash)
+
+        log.info("Username found for email: emailHash={}", emailHash.take(10) + "...")
+
+        return FindUsernameResult.success(user.username)
+    }
+
+    /**
+     * 비밀번호 재설정 이메일 발송
+     */
+    fun sendPasswordResetEmail(email: String): SendEmailVerificationResult {
+        // 1. 이메일 형식 검증
+        if (!isValidEmail(email)) {
+            return SendEmailVerificationResult.failure("유효하지 않은 이메일 형식입니다.")
+        }
+
+        // 2. 이메일 해시
+        val emailHash = emailEncryptor.hash(email)
+
+        // 3. 등록된 이메일인지 확인
+        if (!userStore.existsByEmail(emailHash)) {
+            // 보안상 이메일 존재 여부를 노출하지 않고 성공처럼 응답
+            // 실제로는 이메일을 보내지 않음
+            return SendEmailVerificationResult.success(verificationExpireMinutes)
+        }
+
+        // 4. 인증 코드 생성
+        val code = emailService.generateVerificationCode()
+
+        // 5. 인증 코드 저장
+        val expiresAt = LocalDateTime.now().plusMinutes(verificationExpireMinutes.toLong())
+        emailVerificationStore.save(emailHash, code, expiresAt)
+
+        // 6. 이메일 발송
+        val sent = emailService.sendPasswordResetEmail(email, code)
+        if (!sent) {
+            return SendEmailVerificationResult.failure("이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.")
+        }
+
+        log.info("Password reset email sent: emailHash={}", emailHash.take(10) + "...")
+
+        return SendEmailVerificationResult.success(verificationExpireMinutes)
+    }
+
+    /**
+     * 비밀번호 재설정
+     */
+    fun resetPassword(request: ResetPasswordRequest): PasswordResetResult {
+        // 1. 이메일 해시
+        val emailHash = emailEncryptor.hash(request.email)
+
+        // 2. 인증 코드 조회
+        val verification = emailVerificationStore.findByEmailAndCode(emailHash, request.code)
+            ?: return PasswordResetResult.failure("잘못된 인증 코드입니다.")
+
+        // 3. 만료 확인
+        if (verification.expiresAt.isBefore(LocalDateTime.now())) {
+            return PasswordResetResult.failure("인증 코드가 만료되었습니다. 다시 발송해주세요.")
+        }
+
+        // 4. 비밀번호 유효성 검사
+        if (request.newPassword.length < 8) {
+            return PasswordResetResult.failure("비밀번호는 8자 이상이어야 합니다.")
+        }
+
+        // 5. 사용자 조회
+        val user = userStore.findByEmailHash(emailHash)
+            ?: return PasswordResetResult.failure("사용자를 찾을 수 없습니다.")
+
+        // 6. 비밀번호 변경
+        val encodedPassword = passwordEncoder.encode(request.newPassword)!!
+        userStore.updatePassword(user.id!!, encodedPassword)
+
+        // 7. 인증 코드 삭제
+        emailVerificationStore.deleteByEmail(emailHash)
+
+        // 8. 모든 Refresh Token 삭제 (다른 기기에서 로그아웃)
+        refreshTokenStore.deleteAllByUserId(user.id)
+
+        log.info("Password reset successful: userId={}", user.id)
+
+        return PasswordResetResult.success()
     }
 
     private fun isValidUsername(username: String): Boolean {
@@ -342,7 +474,8 @@ data class UsernameCheckResult(
 
 data class LoginRequest(
     val username: String,
-    val password: String
+    val password: String,
+    val rememberMe: Boolean = false
 )
 
 data class LoginResult(
@@ -352,12 +485,13 @@ data class LoginResult(
     val userId: Long?,
     val username: String?,
     val role: UserRole?,
+    val requiresTermsAgreement: Boolean?,
     val error: String?
 ) {
     companion object {
-        fun success(accessToken: String, refreshToken: String, userId: Long, username: String, role: UserRole) =
-            LoginResult(true, accessToken, refreshToken, userId, username, role, null)
-        fun failure(error: String) = LoginResult(false, null, null, null, null, null, error)
+        fun success(accessToken: String, refreshToken: String, userId: Long, username: String, role: UserRole, requiresTermsAgreement: Boolean) =
+            LoginResult(true, accessToken, refreshToken, userId, username, role, requiresTermsAgreement, null)
+        fun failure(error: String) = LoginResult(false, null, null, null, null, null, null, error)
     }
 }
 
@@ -371,5 +505,31 @@ data class RefreshResult(
         fun success(accessToken: String, refreshToken: String) =
             RefreshResult(true, accessToken, refreshToken, null)
         fun failure(error: String) = RefreshResult(false, null, null, error)
+    }
+}
+
+data class PasswordResetResult(
+    val success: Boolean,
+    val error: String?
+) {
+    companion object {
+        fun success() = PasswordResetResult(true, null)
+        fun failure(error: String) = PasswordResetResult(false, error)
+    }
+}
+
+data class FindUsernameRequest(
+    val email: String,
+    val code: String
+)
+
+data class FindUsernameResult(
+    val success: Boolean,
+    val username: String?,
+    val error: String?
+) {
+    companion object {
+        fun success(username: String) = FindUsernameResult(true, username, null)
+        fun failure(error: String) = FindUsernameResult(false, null, error)
     }
 }
