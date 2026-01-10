@@ -13,6 +13,8 @@ import com.yourapp.news.issue.Issues
 import com.yourapp.news.lifecycle.IssueArticleHistories
 import com.yourapp.news.lifecycle.IssueLifecycles
 import com.yourapp.news.pipeline.PipelineRuns
+import com.yourapp.news.push.PushSettingsTable
+import com.yourapp.news.push.PushTokens
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
 import org.jetbrains.exposed.v1.jdbc.transactions.transaction
@@ -54,7 +56,9 @@ class ExposedConfig {
                 Bookmarks,
                 EmailVerificationCodes,
                 IssueLifecycles,
-                IssueArticleHistories
+                IssueArticleHistories,
+                PushTokens,
+                PushSettingsTable
             )
         }
     }
