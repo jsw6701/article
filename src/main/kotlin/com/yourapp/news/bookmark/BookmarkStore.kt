@@ -64,6 +64,15 @@ class BookmarkStore(private val database: Database) {
             .toSet()
     }
 
+    /**
+     * 특정 이슈(카드)를 북마크한 사용자 ID 목록
+     */
+    fun findUserIdsByIssueId(issueId: Long): List<Long> = transaction(database) {
+        Bookmarks.selectAll()
+            .where { Bookmarks.cardId eq issueId }
+            .map { it[Bookmarks.userId] }
+    }
+
     private fun ResultRow.toBookmark(): Bookmark = Bookmark(
         id = this[Bookmarks.id],
         userId = this[Bookmarks.userId],

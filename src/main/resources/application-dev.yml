@@ -65,6 +65,11 @@ email:
     expire-minutes: 10
     code-length: 6
 
+# Firebase 설정 (Push Notifications)
+firebase:
+  enabled: ${FIREBASE_ENABLED:false}
+  credentials-file: ${FIREBASE_CREDENTIALS_FILE:}
+
 # 로깅
 logging:
   level:

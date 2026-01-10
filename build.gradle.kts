@@ -46,6 +46,9 @@ dependencies {
     // Email
     implementation("org.springframework.boot:spring-boot-starter-mail")
 
+    // Firebase Admin SDK (Push Notifications)
+    implementation("com.google.firebase:firebase-admin:9.4.3")
+
     // Swagger/OpenAPI - WebFlux용
     implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.8")
 
