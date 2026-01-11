@@ -18,6 +18,7 @@ data class User(
     val grade: UserGrade = UserGrade.BRONZE,            // 회원 등급
     val termsAgreedAt: LocalDateTime? = null,           // 이용약관 동의 일시
     val privacyAgreedAt: LocalDateTime? = null,         // 개인정보처리방침 동의 일시
+    val pushNotificationAgreedAt: LocalDateTime? = null, // 푸시 알림 수신 동의 일시 (선택)
     val createdAt: LocalDateTime = LocalDateTime.now(),
     val updatedAt: LocalDateTime = LocalDateTime.now()
 )

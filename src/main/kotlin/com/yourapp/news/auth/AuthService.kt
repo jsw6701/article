@@ -18,6 +18,7 @@ class AuthService(
     private val jwtTokenProvider: JwtTokenProvider,
     private val passwordEncoder: PasswordEncoder,
     private val jwtProperties: JwtProperties,
+    private val pushSettingsStore: com.yourapp.news.push.PushSettingsStore,
     @Value("\${email.verification.expire-minutes:10}") private val verificationExpireMinutes: Int
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -152,15 +153,30 @@ class AuthService(
             emailHash = emailHash,   // 해시는 검색용으로 별도 저장
             emailVerified = true,    // 인증 완료
             gender = gender,
-            ageGroup = ageGroup
+            ageGroup = ageGroup,
+            pushNotificationAgreedAt = if (request.pushNotificationConsent) LocalDateTime.now() else null
         )
 
         val userId = userStore.insert(user)
 
-        // 11. 인증 코드 삭제
+        // 11. 푸시 알림 설정 초기화 (동의한 경우에만 활성화)
+        if (request.pushNotificationConsent) {
+            val pushSettings = com.yourapp.news.push.PushSettings(
+                userId = userId,
+                enabled = true,
+                breakingNews = true,
+                bookmarkUpdates = true,
+                dailyBriefing = false,
+                trendingAlerts = true
+            )
+            pushSettingsStore.upsert(pushSettings)
+            log.info("Push settings initialized for user: userId={}, consent={}", userId, true)
+        }
+
+        // 12. 인증 코드 삭제
         emailVerificationStore.deleteByEmail(emailHash)
 
-        log.info("New user registered: username={}, userId={}", request.username, userId)
+        log.info("New user registered: username={}, userId={}, pushConsent={}", request.username, userId, request.pushNotificationConsent)
 
         return SignUpResult.success(userId, request.username)
     }
@@ -420,7 +436,8 @@ data class SignUpRequest(
     val password: String,
     val email: String,       // 이메일 (인증 완료된 이메일)
     val gender: String,      // MALE, FEMALE
-    val ageGroup: String     // TEENS, TWENTIES, THIRTIES, FORTIES, FIFTIES, SIXTIES_PLUS
+    val ageGroup: String,    // TEENS, TWENTIES, THIRTIES, FORTIES, FIFTIES, SIXTIES_PLUS
+    val pushNotificationConsent: Boolean = false  // 푸시 알림 수신 동의 (선택)
 )
 
 // ========== Email Verification DTOs ==========

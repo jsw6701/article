@@ -31,6 +31,7 @@ class UserStore(private val database: Database) {
             it[grade] = user.grade.name
             it[termsAgreedAt] = user.termsAgreedAt ?: now
             it[privacyAgreedAt] = user.privacyAgreedAt ?: now
+            it[pushNotificationAgreedAt] = user.pushNotificationAgreedAt
             it[createdAt] = now
             it[updatedAt] = now
         } get Users.id
@@ -143,6 +144,7 @@ class UserStore(private val database: Database) {
         grade = UserGrade.valueOf(this[Users.grade]),
         termsAgreedAt = this[Users.termsAgreedAt],
         privacyAgreedAt = this[Users.privacyAgreedAt],
+        pushNotificationAgreedAt = this[Users.pushNotificationAgreedAt],
         createdAt = this[Users.createdAt],
         updatedAt = this[Users.updatedAt]
     )

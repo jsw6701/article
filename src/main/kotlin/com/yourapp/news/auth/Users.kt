@@ -19,6 +19,7 @@ object Users : Table("users") {
     val grade = varchar("grade", 20).default(UserGrade.BRONZE.name)  // 회원 등급
     val termsAgreedAt = datetime("terms_agreed_at").nullable()       // 이용약관 동의 일시
     val privacyAgreedAt = datetime("privacy_agreed_at").nullable()   // 개인정보처리방침 동의 일시
+    val pushNotificationAgreedAt = datetime("push_notification_agreed_at").nullable()  // 푸시 알림 수신 동의 일시
     val createdAt = datetime("created_at")
     val updatedAt = datetime("updated_at")
 
