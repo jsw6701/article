@@ -131,11 +131,11 @@ class LifecycleService(
      * 활성 이슈 ID 목록 조회 (최근 N일 내 기사가 있는 이슈)
      */
     private fun getActiveIssueIds(since: LocalDateTime): List<Long> = transaction(database) {
-        IssueArticles.selectAll()
+        IssueArticles
+            .select(IssueArticles.issueId)
             .where { IssueArticles.publishedAt greaterEq since }
-            .groupBy(IssueArticles.issueId)
+            .withDistinct()
             .map { it[IssueArticles.issueId] }
-            .distinct()
     }
 
     /**
