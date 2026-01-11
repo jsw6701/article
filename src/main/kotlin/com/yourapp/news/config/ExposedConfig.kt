@@ -4,6 +4,7 @@ import com.yourapp.news.article.Articles
 import com.yourapp.news.auth.EmailVerificationCodes
 import com.yourapp.news.auth.RefreshTokens
 import com.yourapp.news.auth.Users
+import com.yourapp.news.auth.UserSettingsTable
 import com.yourapp.news.bookmark.Bookmarks
 import com.yourapp.news.card.CardGenerationLogs
 import com.yourapp.news.card.Cards
@@ -58,7 +59,8 @@ class ExposedConfig {
                 IssueLifecycles,
                 IssueArticleHistories,
                 PushTokens,
-                PushSettingsTable
+                PushSettingsTable,
+                UserSettingsTable
             )
         }
     }
