@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/push")
 class PushController(
     private val pushTokenStore: PushTokenStore,
-    private val pushSettingsStore: PushSettingsStore
+    private val pushSettingsStore: PushSettingsStore,
+    private val pushService: PushService
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -150,6 +151,44 @@ class PushController(
             )
         }
     }
+
+    /**
+     * 테스트 푸시 알림 발송 (본인에게)
+     */
+    @PostMapping("/test")
+    fun sendTestPush(
+        authentication: Authentication,
+        @RequestBody(required = false) request: TestPushRequest?
+    ): ResponseEntity<TestPushResponse> {
+        val principal = authentication.principal as? UserPrincipal
+            ?: return ResponseEntity.status(401).body(
+                TestPushResponse(success = false, message = "인증 정보가 유효하지 않습니다.", sentCount = 0)
+            )
+
+        try {
+            val title = request?.title ?: "🔔 SHIFT 테스트 알림"
+            val body = request?.body ?: "푸시 알림이 정상적으로 작동합니다!"
+            val data = mapOf("route" to "/")
+
+            val sentCount = pushService.sendToUser(principal.userId, title, body, data)
+
+            return if (sentCount > 0) {
+                log.info("Test push sent: userId={}, sentCount={}", principal.userId, sentCount)
+                ResponseEntity.ok(
+                    TestPushResponse(success = true, message = "테스트 알림이 발송되었습니다.", sentCount = sentCount)
+                )
+            } else {
+                ResponseEntity.ok(
+                    TestPushResponse(success = false, message = "등록된 푸시 토큰이 없거나 Firebase가 비활성화되어 있습니다.", sentCount = 0)
+                )
+            }
+        } catch (e: Exception) {
+            log.error("Failed to send test push: {}", e.message, e)
+            return ResponseEntity.status(500).body(
+                TestPushResponse(success = false, message = "테스트 알림 발송 중 오류: ${e.message}", sentCount = 0)
+            )
+        }
+    }
 }
 
 // ========== DTOs ==========
@@ -188,6 +227,17 @@ data class UpdatePushSettingsRequest(
     val bookmarkUpdates: Boolean,
     val dailyBriefing: Boolean,
     val trendingAlerts: Boolean
+)
+
+data class TestPushRequest(
+    val title: String?,
+    val body: String?
+)
+
+data class TestPushResponse(
+    val success: Boolean,
+    val message: String?,
+    val sentCount: Int
 )
 
 fun PushSettings.toDto(): PushSettingsDto = PushSettingsDto(
